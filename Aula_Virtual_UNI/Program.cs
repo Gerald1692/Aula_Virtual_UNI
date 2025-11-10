@@ -2,6 +2,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+// SQL Server connection factory
+builder.Services.AddSingleton<Aula_Virtual_UNI.Data.ISqlConnectionFactory, Aula_Virtual_UNI.Data.SqlConnectionFactory>();
 
 var app = builder.Build();
 
