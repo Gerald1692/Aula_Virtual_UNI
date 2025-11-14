@@ -62,7 +62,7 @@ jslogin = {
 
                         // Redirigir a la página principal después de 2 segundos
                         setTimeout(function () {
-                            window.location.href = '/Home/Index';
+                            window.location.href = '/Menu/V_Menu';
                         }, 2100);
 
                     } else {

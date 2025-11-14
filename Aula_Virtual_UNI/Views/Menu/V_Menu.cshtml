@@ -1,0 +1,88 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Panel Estudiante";
+    string rol = ViewBag.Rol;
+    string nombre = ViewBag.Nombre;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aula Virtual - @rol</title>
+
+    <!-- Tus estilos -->
+    <link href="~/css/menuprincipal/menuprincipal.css" rel="stylesheet" />
+    <link href="~/css/m_principal/MenuPrincipal.css" rel="stylesheet" />
+    <link href="~/css/menu/menu.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+    @if (rol == "Profesor")
+    {
+        <!-- NAV SUPERIOR -->
+        <nav class="topnav" role="navigation" aria-label="Principal">
+            <ul class="nav-actions">
+                <li><a class="nav-link active" href="#inicio"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                <li><a class="nav-link" href="#cursos"><i class="fa-solid fa-layer-group"></i> Cursos</a></li>
+                <li><a class="nav-link" href="#config"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+            <div class="brand">
+                <span>Aula Virtual</span>
+            </div>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="main">
+            <header class="header">
+                <h1>Recursos</h1>
+            </header>
+            <div class="section-title">
+                <i class="fa-regular fa-square-plus"></i> Profesor
+            </div>
+        </main>
+    }
+    else if (rol == "Estudiante")
+    {
+        <!-- NAV SUPERIOR -->
+        <nav class="topnav" role="navigation" aria-label="Principal">
+            <ul class="nav-actions">
+                <li><a class="nav-link active" href="#inicio"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                <li><a class="nav-link" href="#cursos"><i class="fa-solid fa-layer-group"></i> Cursos</a></li>
+                <li><a class="nav-link" href="#config"><i class="fa-solid fa-gear"></i> Configuración</a></li>
+            </ul>
+            <div class="brand">
+                <span>Aula Virtual</span>
+            </div>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="main">
+            <header class="header">
+                <h1>Recursos</h1>
+            </header>
+            <div class="section-title">
+                <i class="fa-regular fa-square-plus"></i> Estudiante
+            </div>
+        </main>
+    }
+    else if (rol == "Administrador")
+    {
+        <div class="alert alert-info">
+            <h5>Opciones del Administrador</h5>
+            <ul>
+                <li><a href="/Home/Index">Ir al panel principal</a></li>
+                <li><a href="/Database/Test">Probar conexión a base de datos</a></li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Rol no reconocido.</div>
+    }
+</body>
+</html>

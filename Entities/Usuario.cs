@@ -10,5 +10,8 @@ namespace Entities
     {
         public string? NombreUsuario { get; set; }
         public string? ContrasenaUsuario { get; set; }
+
+        public string? Rol { get; set; }
     }
 }
+

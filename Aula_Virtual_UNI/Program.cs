@@ -1,20 +1,29 @@
-using AulaVirtualDAL;
+﻿using AulaVirtualDAL;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// MVC
 builder.Services.AddControllersWithViews();
+
 // SQL Server connection factory
 builder.Services.AddSingleton<Aula_Virtual_UNI.Data.ISqlConnectionFactory, Aula_Virtual_UNI.Data.SqlConnectionFactory>();
 builder.Services.AddScoped<Login>();
 
+// 🔹 Habilitar sesiones
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = "AulaVirtual.Session";
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -23,6 +32,9 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// 🔹 Agregar manejo de sesión
+app.UseSession();
+
 app.UseAuthorization();
 
 app.MapControllerRoute(
@@ -30,3 +42,4 @@ app.MapControllerRoute(
     pattern: "{controller=Login}/{action=Login}/{id?}");
 
 app.Run();
+

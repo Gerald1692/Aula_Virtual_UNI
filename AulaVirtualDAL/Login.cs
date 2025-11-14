@@ -9,64 +9,52 @@ namespace AulaVirtualDAL
         public Respuesta<Usuario> IniciarSesion(string Usuario, string Contrasena, string Conexion)
         {
             Respuesta<Usuario> respuesta = new Respuesta<Usuario>();
-            Usuario usuarios = new Usuario();
+
             try
             {
-
                 using (SqlConnection connection = new SqlConnection(Conexion))
                 {
-
                     connection.Open();
 
                     using (SqlCommand command = new SqlCommand("spIniciarSesion", connection))
                     {
-
                         command.CommandType = CommandType.StoredProcedure;
 
-                        command.Parameters.Add(new SqlParameter("@pNombreUsuario", SqlDbType.NVarChar, 70) { Value = Usuario });
-                        command.Parameters.Add(new SqlParameter("@pContrasena", SqlDbType.NVarChar, 70) { Value = Contrasena });
+                        command.Parameters.Add(new SqlParameter("@pNombreUsuario", SqlDbType.NVarChar, 80) { Value = Usuario });
+                        command.Parameters.Add(new SqlParameter("@pContrasena", SqlDbType.NVarChar, 50) { Value = Contrasena });
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-
                             if (reader.Read())
                             {
+                                int exito = reader.GetInt32(reader.GetOrdinal("Exito"));
 
-                                int Exito = (int)reader["Exito"];
-
-
-                                if (Exito == 1)
+                                if (exito == 1)
                                 {
                                     Usuario usuario = new Usuario
                                     {
-                                        NombreUsuario = (string)reader["NombreCompleto"]
-
+                                        NombreUsuario = reader["NombreCompleto"].ToString(),
+                                        Rol = reader["id_rol"].ToString()
                                     };
 
-
                                     respuesta.Ok = true;
-                                    respuesta.Mensaje = "Inicio de sesión exitoso!";
-                                    respuesta.ValorRetorno = usuarios;
-
-
+                                    respuesta.Mensaje = "Inicio de sesión exitoso.";
+                                    respuesta.ValorRetorno = usuario;
                                 }
                                 else
                                 {
-
                                     respuesta.Ok = false;
-                                    respuesta.Mensaje = "El usuario o  la contraseña no son correctos";
+                                    respuesta.Mensaje = "Usuario o contraseña incorrectos.";
                                 }
-
-
                             }
-
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "Usuario o contraseña incorrectos.";
+                            }
                         }
-
-
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -75,9 +63,6 @@ namespace AulaVirtualDAL
             }
 
             return respuesta;
-
-
-
         }
     }
 }
