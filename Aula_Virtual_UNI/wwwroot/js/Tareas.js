@@ -199,35 +199,94 @@
         applyStatus(card, card.dataset.estado);
     }
 
-    form.addEventListener('submit', (event) => {
+    async function cargarTareas() {
+        try {
+            const response = await fetch('/api/tareas');
+            if (!response.ok) {
+                throw new Error('No se pudieron cargar las tareas.');
+            }
+
+            const tareas = await response.json();
+            list.innerHTML = '';
+
+            tareas.forEach((t) => {
+                const card = createCardElements({
+                    nombre: t.nombre,
+                    curso: t.curso,
+                    descripcion: t.descripcion,
+                    fecha: t.fechaEntrega?.split('T')[0] ?? '',
+                    estado: t.estado ?? 'pendiente'
+                });
+                list.appendChild(card);
+            });
+
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+            ensureEmptyState();
+        }
+    }
+
+    form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
-            fecha: inputs.fecha.value,
+            fechaEntrega: inputs.fecha.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente'
         };
 
-        if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
+        if (!data.nombre || !data.curso || !data.descripcion || !data.fechaEntrega) {
             return;
         }
 
-        if (editingCard) {
-            updateCard(editingCard, data);
-        } else {
-            const emptyEl = emptyState();
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-            const card = createCardElements(data);
-            list.appendChild(card);
-        }
+        try {
+            const response = await fetch('/api/tareas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
 
-        clearForm();
-        ensureEmptyState();
+            if (!response.ok) {
+                throw new Error('No se pudo guardar la tarea.');
+            }
+
+            const saved = await response.json();
+
+            if (editingCard) {
+                updateCard(editingCard, {
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega,
+                    estado: saved.estado ?? data.estado
+                });
+            } else {
+                const emptyEl = emptyState();
+                if (emptyEl) {
+                    emptyEl.remove();
+                }
+                const card = createCardElements({
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega,
+                    estado: saved.estado ?? data.estado
+                });
+                list.appendChild(card);
+            }
+
+            clearForm();
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+        }
     });
 
+    cargarTareas();
     ensureEmptyState();
 });

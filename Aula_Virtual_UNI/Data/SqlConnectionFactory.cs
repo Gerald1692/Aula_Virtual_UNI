@@ -15,8 +15,8 @@ namespace Aula_Virtual_UNI.Data
 
         public SqlConnectionFactory(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("AulaVirtual")
-                ?? throw new InvalidOperationException("Connection string 'AulaVirtual' not found.");
+            _connectionString = configuration.GetConnectionString("ConexionDB")
+                ?? throw new InvalidOperationException("Connection string 'ConexionDB' not found.");
         }
 
         public IDbConnection CreateConnection()

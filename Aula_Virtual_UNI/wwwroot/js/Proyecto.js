@@ -139,34 +139,90 @@
         card.querySelector('.project-description').textContent = data.descripcion;
     }
 
-    form.addEventListener('submit', function (event) {
+    async function cargarProyectos() {
+        try {
+            const response = await fetch('/api/proyectos');
+            if (!response.ok) {
+                throw new Error('No se pudieron cargar los proyectos.');
+            }
+
+            const proyectos = await response.json();
+            list.innerHTML = '';
+
+            proyectos.forEach((p) => {
+                const card = createCardElements({
+                    nombre: p.nombre,
+                    curso: p.curso,
+                    descripcion: p.descripcion,
+                    fecha: p.fechaEntrega?.split('T')[0] ?? ''
+                });
+                list.appendChild(card);
+            });
+
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+            ensureEmptyState();
+        }
+    }
+
+    form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
-            fecha: inputs.fecha.value
+            fechaEntrega: inputs.fecha.value
         };
 
-        if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
+        if (!data.nombre || !data.curso || !data.descripcion || !data.fechaEntrega) {
             return;
         }
 
-        if (editingCard) {
-            updateCard(editingCard, data);
-        } else {
-            const emptyEl = document.getElementById('emptyState');
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-            const card = createCardElements(data);
-            list.appendChild(card);
-        }
+        try {
+            const response = await fetch('/api/proyectos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
 
-        clearForm();
-        ensureEmptyState();
+            if (!response.ok) {
+                throw new Error('No se pudo guardar el proyecto.');
+            }
+
+            const saved = await response.json();
+
+            if (editingCard) {
+                updateCard(editingCard, {
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega
+                });
+            } else {
+                const emptyEl = document.getElementById('emptyState');
+                if (emptyEl) {
+                    emptyEl.remove();
+                }
+                const card = createCardElements({
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega
+                });
+                list.appendChild(card);
+            }
+
+            clearForm();
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+        }
     });
 
+    cargarProyectos();
     ensureEmptyState();
 });
