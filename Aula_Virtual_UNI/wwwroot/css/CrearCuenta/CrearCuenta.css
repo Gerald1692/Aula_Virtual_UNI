@@ -1,0 +1,41 @@
+﻿
+body {
+    min-block-size: 100vh;
+    background-image: url('/recursos/fondo_login.svg');
+    position: relative;
+    display: block;
+}
+
+
+/* Estilos incrustados de respaldo para asegurar div blanco y elementos por delante */
+.registro-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 720px;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(2,6,23,0.12);
+    position: relative;
+    z-index: 10;
+    margin-top: 1rem;
+}
+
+    .registro-card * {
+        position: relative;
+        z-index: 11;
+    }
+
+    .registro-card .form-control {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 0.65rem 0.9rem;
+        font-size: 1rem;
+    }
+
+@media (max-width: 576px) {
+    .registro-card {
+        padding: 1.25rem;
+        margin: 0 0.5rem;
+    }
+}

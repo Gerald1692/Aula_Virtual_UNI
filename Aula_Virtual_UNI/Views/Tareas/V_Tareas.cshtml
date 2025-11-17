@@ -1,0 +1,94 @@
+﻿@{
+    Layout = null;
+
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script src="~/js/tareas.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aula Virtual - Proyectos</title>
+    <!-- Tus estilos -->
+    <link href="~/css/proyectos/proyectos.css" rel="stylesheet" />
+    <link href="~/css/m_principal/MenuPrincipal.css" rel="stylesheet" />
+    <link href="~/css/tarreas/tareas.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+
+
+<body>
+    <nav class="topnav" role="navigation" aria-label="Principal">
+        <ul class="nav-actions">
+            <li>
+                <a class="nav-link" href="/Menu/V_Menu">
+                    <i class="fa-solid fa-bars"></i> Menú Principal
+                </a>
+            </li>
+        </ul>
+        <div class="brand">
+            <span>Aula Virtual</span>
+        </div>
+    </nav>
+
+
+
+    <main class="main tasks-page">
+
+        <header class="header">
+            <h1>Crear Tareas</h1>
+            <form class="project-form" action="#" method="post">
+                <label class="form-field">
+                    <span>Nombre de la Tarea</span>
+                    <input type="text" name="nombre" required />
+                </label>
+                <label class="form-field">
+                    <span>Curso</span>
+                    <input type="text" name="curso" required />
+                </label>
+                <label class="form-field">
+                    <span>Fecha de entrega</span>
+                    <input type="date" name="fecha" required />
+                </label>
+                <label class="form-field">
+                    <span>Descripción de la Tarea</span>
+                    <textarea name="descripcion" rows="3" required></textarea>
+                </label>
+                <div class="form-field form-action">
+                    <span>&nbsp;</span>
+                    <button type="submit" class="btn-create">
+                        <i class="fa-solid fa-plus"></i> <span class="label-text">Crear</span>
+                    </button>
+                </div>
+            </form>
+        </header>
+
+
+
+        <section class="projects" aria-live="polite">
+            <h2 class="project-list-title">
+                <i class="fa-solid fa-list-check"></i> Tareas creados
+            </h2>
+            <div class="project-list" id="projectList">
+                <p class="empty-state" id="emptyState">Aún no hay Tareas creados.</p>
+            </div>
+        </section>
+
+    </main>
+    
+
+
+</body>
+
+</html>
+
+
+
+
+
+
+

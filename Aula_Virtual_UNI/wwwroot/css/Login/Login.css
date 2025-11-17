@@ -1,0 +1,111 @@
+﻿:root {
+    --card-bg: rgba(255,255,255,0.96);
+    --accent: #0d6efd; /* color principal (bootstrap primary) */
+    --muted: #6c757d;
+}
+
+/* Fondo de la página con imagen */
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Fondo con overlay */
+.page-wrapper {
+    min-height: 100vh;
+    background: url('../../recursos/FONDO_LOGIN.svg') center/cover no-repeat fixed;
+    position: relative;
+    display: block;
+}
+
+    /* Capa de oscurecimiento para mejorar contraste */
+    .page-wrapper::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.35);
+        z-index: 0;
+    }
+
+/* Card que contiene la ilustración y el formulario */
+.auth-card {
+    position: relative;
+    z-index: 1; /* por encima del overlay */
+    max-width: 800px;
+    width: 500%;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* Paneles */
+.left-panel, .right-panel {
+    min-height: 420px;
+}
+
+/* Estilo del panel izquierdo (ilustración) */
+.left-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    display: flex;
+    background: var(--card-bg);
+}
+
+
+
+/* Panel del formulario */
+.right-panel {
+    background: var(--card-bg);
+    color: #0b2540;
+    padding: 2.25rem;
+    display: flex;
+    align-items: center;
+}
+
+    /* Título */
+    .right-panel h3 {
+        font-weight: 600;
+    }
+
+/* Inputs */
+.form-control:focus {
+    box-shadow: 0 0 0 0.15rem rgba(13,110,253,0.18);
+    border-color: var(--accent);
+}
+
+/* Botón toggle de contraseña (icono dentro del input-group) */
+.toggle-pass {
+    border-left: 0;
+    border-radius: 0 .375rem .375rem 0;
+}
+
+/* Pequeños detalles */
+.enlaces a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+    .enlaces a:hover {
+        text-decoration: underline;
+    }
+
+/* Responsividad */
+@media (max-width: 767.98px) {
+    .left-panel {
+        display: none; /* en móvil ocultamos la ilustración para ahorrar espacio */
+    }
+
+    .right-panel {
+        border-radius: 12px;
+        margin: 1.5rem;
+    }
+}
+
+/* Mejora visual de validación */
+.was-validated .form-control:invalid {
+    border-color: #dc3545;
+    box-shadow: none;
+}
+
+    .was-validated .form-control:invalid ~ .invalid-feedback {
+        display: block;
+    }

@@ -1,0 +1,90 @@
+﻿body {
+    min-block-size: 100vh;
+    background-image: url('/recursos/fondo_login.svg');
+    position: relative;
+    display: block;
+}
+
+.main-container {
+    background: #fff;
+    border-radius: 12px;
+    margin: 32px auto;
+    max-width: 900px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 32px 24px;
+}
+
+.left-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-img {
+    width: 220px;
+    height: 180px;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+
+.welcome-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #222;
+    text-align: center;
+}
+
+.right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-img {
+    width: 160px;
+    margin-bottom: 12px;
+}
+
+.btn-yellow {
+    background: #ffd000;
+    color: #222;
+    font-weight: 500;
+    border: none;
+    margin-right: 8px;
+}
+
+    .btn-yellow:last-child {
+        margin-right: 0;
+    }
+
+.divider {
+    width: 100%;
+    border-top: 2px solid #eee;
+    margin: 18px 0;
+}
+
+.instructions {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #222;
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.input-group {
+    width: 100%;
+    max-width: 350px;
+    margin-bottom: 18px;
+}
+
+.btn-green {
+    background: #54b948;
+    color: #fff;
+    font-weight: 700;
+    border: none;
+    width: 100%;
+    max-width: 350px;
+    font-size: 1.1rem;
+}

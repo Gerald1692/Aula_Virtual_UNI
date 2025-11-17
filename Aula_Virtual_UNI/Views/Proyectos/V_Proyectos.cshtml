@@ -1,0 +1,87 @@
+﻿@{
+    Layout = null;
+   
+}
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aula Virtual - Proyectos</title>
+    <!-- Tus estilos -->
+    <link href="~/css/proyectos/proyectos.css" rel="stylesheet" />
+    <link href="~/css/m_principal/MenuPrincipal.css" rel="stylesheet" />
+    <link href="~/css/menu/menu.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="~/js/proyecto.js"></script>
+</head>
+
+<body>
+    <!-- NAV SUPERIOR -->
+    <nav class="topnav" role="navigation" aria-label="Principal">
+        <ul class="nav-actions">
+
+            <li>
+                <a class="nav-link" href="/Menu/V_Menu">
+                    <i class="fa-solid fa-bars"></i> Menu Principal
+                </a>
+            </li>
+            </a>
+            </li>
+            <!-- <li><a class="nav-link" href="#Proyectos"><i class="fa-solid fa-layer-group"></i> Crear Proyectos</a></li>-->
+
+        </ul>
+        <div class="brand">
+            <span>Aula Virtual</span>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="main">
+        <header class="header">
+            <h1>Crear Proyectos</h1>
+            <form class="project-form" action="#" method="post">
+                <label class="form-field">
+                    <span>Nombre del proyecto</span>
+                    <input type="text" name="nombre" required />
+                </label>
+                <label class="form-field">
+                    <span>Curso</span>
+                    <input type="text" name="curso" required />
+                </label>
+                <label class="form-field">
+                    <span>Fecha de entrega</span>
+                    <input type="date" name="fecha" required />
+                </label>
+                <label class="form-field">
+                    <span>Descripción del proyecto</span>
+                    <textarea name="descripcion" rows="3" required></textarea>
+                </label>
+                <div class="form-field form-action">
+                    <span>&nbsp;</span>
+                    <button type="submit" class="btn-create">
+                        <i class="fa-solid fa-plus"></i> <span class="label-text">Crear</span>
+                    </button>
+                </div>
+            </form>
+        </header>
+        <div class="section-title">
+            <i class="fa-regular fa-square-plus"></i> Profesor
+        </div>
+
+        <section class="projects" aria-live="polite">
+            <h2 class="project-list-title">
+                <i class="fa-solid fa-list-check"></i> Proyectos creados
+            </h2>
+            <div class="project-list" id="projectList">
+                <p class="empty-state" id="emptyState">Aún no hay proyectos creados.</p>
+            </div>
+        </section>
+    </main>
+
+    
+</body>
+</html>
