@@ -1,63 +1,66 @@
-﻿jslogin = {
+﻿// Write your JavaScript code.
 
+/// <summary>
+/// JavaScript para la pantalla de login
+/// </summary>
+/// <createdate>10-10-2024</createdate>
+/// <author>Gerald Arias</author>
+/// <lastmodificationdate></lastmodificationdate>
+/// <lastmodificationdescription></lastmodificationdescription>
+/// <lastmodifierauthor></lastmodifierauthor>
+
+jslogin = {
+
+    objetos: {
+
+
+    },
     controles: {
+
         inputUsuario: '#username',
         inputContrasena: '#password'
+
     },
 
     botones: {
+
         btnIniciarSesion: '#btningresar'
+
     },
 
+    variables: {
+
+
+
+
+    },
     metodos: {
 
-        IniciarSesion: function (event) {
+        IniciarSesion: function () {
 
             event.preventDefault();
 
             let Usuario = $(jslogin.controles.inputUsuario).val();
             let Contrasena = $(jslogin.controles.inputContrasena).val();
 
-            // Validar campos vacíos
-            if (Usuario.trim() === "" || Contrasena.trim() === "") {
-               
-                Swal.fire({
-                    title: "Campos vacíos",
-                    text: "Debe ingresar usuario y contraseña.",
-                    icon: "warning"
-                });
-                return;
-            }
 
-            // Loading
-            Swal.fire({
-                title: "Validando...",
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
 
+
+            // Realizar la solicitud AJAX
             $.ajax({
                 url: '../Login/IniciarSesion',
                 type: 'POST',
                 data: { Usuario: Usuario, Contrasena: Contrasena },
-
                 success: function (result) {
-                   
+                    console.log(result)
                     if (result.ok) {
-
-                        // Loading
                         Swal.fire({
-                            title: "Validando...",
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
-
-                        Swal.fire({
-                            title: "Has ingresado con Éxito",
+                            title: "Éxito",
                             text: `${result.mensaje}`,
                             icon: "success"
-                        });
+                        }); 
 
+                        // Redirigir a la página principal después de 2 segundos
                         setTimeout(function () {
                             window.location.href = '/Menu/V_Menu';
                         }, 2100);
@@ -69,26 +72,38 @@
                             icon: "warning"
                         });
                     }
-                },
 
-                error: function (xhr, status, error) {
+
+
+                },
+                error: function () {
+                    // Manejo de errores si es necesario
+
                     Swal.fire({
                         title: "Error",
-                        text: "Ocurrió un error en la solicitud.",
+                        text: `${result.mensaje}`,
                         icon: "error"
                     });
+
                 }
             });
 
+
         }
 
-    },
 
-    eventos: function () {
-        $(jslogin.botones.btnIniciarSesion).on('click', function (e) {
-            jslogin.metodos.IniciarSesion(e);
-        });
-    }
+    },
+    eventos:
+        function () {
+
+            $(jslogin.botones.btnIniciarSesion).on('click', function () {
+
+                jslogin.metodos.IniciarSesion();
+
+            });
+
+
+        }
 
 }
 
