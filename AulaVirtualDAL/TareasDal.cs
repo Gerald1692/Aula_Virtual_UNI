@@ -61,5 +61,46 @@ namespace AulaVirtualDAL
 
             return tarea;
         }
+
+        public async Task<Tarea?> ActualizarTareaAsync(int id, Tarea tarea)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await using var command = new SqlCommand(
+                "UPDATE Tareas SET Nombre = @Nombre, Curso = @Curso, FechaEntrega = @FechaEntrega, Descripcion = @Descripcion, Estado = @Estado WHERE Id = @Id",
+                connection);
+
+            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = tarea.Nombre });
+            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = tarea.Curso });
+            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = tarea.FechaEntrega });
+            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = tarea.Descripcion });
+            command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = tarea.Estado });
+            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+            var affected = await command.ExecuteNonQueryAsync();
+            if (affected == 0)
+            {
+                return null;
+            }
+
+            tarea.Id = id;
+            return tarea;
+        }
+
+        public async Task<bool> EliminarTareaAsync(int id)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await using var command = new SqlCommand(
+                "DELETE FROM Tareas WHERE Id = @Id",
+                connection);
+
+            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+            var affected = await command.ExecuteNonQueryAsync();
+            return affected > 0;
+        }
     }
 }

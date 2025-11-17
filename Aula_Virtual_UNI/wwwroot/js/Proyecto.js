@@ -58,6 +58,7 @@
     function createCardElements(data) {
         const card = document.createElement('article');
         card.className = 'project-card';
+        card.dataset.id = data.id;
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -107,11 +108,7 @@
         deleteButton.className = 'btn-action btn-delete';
         deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
         deleteButton.addEventListener('click', function () {
-            if (editingCard === card) {
-                clearForm();
-            }
-            card.remove();
-            ensureEmptyState();
+            eliminarProyecto(card);
         });
 
         actions.appendChild(editButton);
@@ -125,6 +122,9 @@
     }
 
     function updateCard(card, data) {
+        if (data.id) {
+            card.dataset.id = data.id;
+        }
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -139,6 +139,58 @@
         card.querySelector('.project-description').textContent = data.descripcion;
     }
 
+    async function persistirProyecto(card) {
+        if (!card?.dataset.id) {
+            return;
+        }
+
+        const payload = {
+            nombre: card.dataset.nombre,
+            curso: card.dataset.curso,
+            descripcion: card.dataset.descripcion,
+            fechaEntrega: card.dataset.fecha
+        };
+
+        const response = await fetch(`/api/proyectos/${card.dataset.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error('No se pudo actualizar el proyecto.');
+        }
+    }
+
+    async function eliminarProyecto(card) {
+        if (editingCard === card) {
+            clearForm();
+        }
+
+        if (!card.dataset.id) {
+            card.remove();
+            ensureEmptyState();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/proyectos/${card.dataset.id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok && response.status !== 404) {
+                throw new Error('No se pudo eliminar el proyecto.');
+            }
+
+            card.remove();
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     async function cargarProyectos() {
         try {
             const response = await fetch('/api/proyectos');
@@ -151,6 +203,7 @@
 
             proyectos.forEach((p) => {
                 const card = createCardElements({
+                    id: p.id,
                     nombre: p.nombre,
                     curso: p.curso,
                     descripcion: p.descripcion,
@@ -180,9 +233,13 @@
             return;
         }
 
+        const isEditing = Boolean(editingCard);
+        const endpoint = isEditing && editingCard?.dataset.id ? `/api/proyectos/${editingCard.dataset.id}` : '/api/proyectos';
+        const method = isEditing && editingCard?.dataset.id ? 'PUT' : 'POST';
+
         try {
-            const response = await fetch('/api/proyectos', {
-                method: 'POST',
+            const response = await fetch(endpoint, {
+                method,
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -195,8 +252,9 @@
 
             const saved = await response.json();
 
-            if (editingCard) {
+            if (isEditing && editingCard) {
                 updateCard(editingCard, {
+                    id: saved.id,
                     nombre: saved.nombre,
                     curso: saved.curso,
                     descripcion: saved.descripcion,
@@ -208,6 +266,7 @@
                     emptyEl.remove();
                 }
                 const card = createCardElements({
+                    id: saved.id,
                     nombre: saved.nombre,
                     curso: saved.curso,
                     descripcion: saved.descripcion,

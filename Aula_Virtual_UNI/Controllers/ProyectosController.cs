@@ -36,5 +36,34 @@ namespace Aula_Virtual_UNI.Controllers
             var creado = await _proyectosDal.CrearProyectoAsync(proyecto);
             return Created($"/api/proyectos/{creado.Id}", creado);
         }
+
+        [HttpPut("api/proyectos/{id:int}")]
+        public async Task<IActionResult> ActualizarProyecto(int id, [FromBody] Proyecto proyecto)
+        {
+            if (!ModelState.IsValid || proyecto == null)
+            {
+                return BadRequest("Datos de proyecto inválidos.");
+            }
+
+            var actualizado = await _proyectosDal.ActualizarProyectoAsync(id, proyecto);
+            if (actualizado == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(actualizado);
+        }
+
+        [HttpDelete("api/proyectos/{id:int}")]
+        public async Task<IActionResult> EliminarProyecto(int id)
+        {
+            var eliminado = await _proyectosDal.EliminarProyectoAsync(id);
+            if (!eliminado)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
     }
 }

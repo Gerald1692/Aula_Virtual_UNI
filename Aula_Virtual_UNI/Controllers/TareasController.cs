@@ -38,5 +38,36 @@ namespace Aula_Virtual_UNI.Controllers
             var creada = await _tareasDal.CrearTareaAsync(tarea);
             return Created($"/api/tareas/{creada.Id}", creada);
         }
+
+        [HttpPut("api/tareas/{id:int}")]
+        public async Task<IActionResult> ActualizarTarea(int id, [FromBody] Tarea tarea)
+        {
+            if (!ModelState.IsValid || tarea == null)
+            {
+                return BadRequest("Datos de tarea inválidos.");
+            }
+
+            tarea.Estado = string.IsNullOrWhiteSpace(tarea.Estado) ? "pendiente" : tarea.Estado;
+
+            var actualizada = await _tareasDal.ActualizarTareaAsync(id, tarea);
+            if (actualizada == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(actualizada);
+        }
+
+        [HttpDelete("api/tareas/{id:int}")]
+        public async Task<IActionResult> EliminarTarea(int id)
+        {
+            var eliminada = await _tareasDal.EliminarTareaAsync(id);
+            if (!eliminada)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
     }
 }

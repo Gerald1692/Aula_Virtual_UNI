@@ -59,5 +59,42 @@ namespace AulaVirtualDAL
 
             return proyecto;
         }
+
+        public async Task<Proyecto?> ActualizarProyectoAsync(int id, Proyecto proyecto)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await using var command = new SqlCommand(
+                "UPDATE Proyectos SET Nombre = @Nombre, Curso = @Curso, FechaEntrega = @FechaEntrega, Descripcion = @Descripcion WHERE Id = @Id",
+                connection);
+
+            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = proyecto.Nombre });
+            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = proyecto.Curso });
+            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = proyecto.FechaEntrega });
+            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = proyecto.Descripcion });
+            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+            var affected = await command.ExecuteNonQueryAsync();
+            if (affected == 0)
+            {
+                return null;
+            }
+
+            proyecto.Id = id;
+            return proyecto;
+        }
+
+        public async Task<bool> EliminarProyectoAsync(int id)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await using var command = new SqlCommand("DELETE FROM Proyectos WHERE Id = @Id", connection);
+            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+
+            var affected = await command.ExecuteNonQueryAsync();
+            return affected > 0;
+        }
     }
 }
