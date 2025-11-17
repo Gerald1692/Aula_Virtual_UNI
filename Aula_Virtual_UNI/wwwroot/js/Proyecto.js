@@ -58,6 +58,7 @@
     function createCardElements(data) {
         const card = document.createElement('article');
         card.className = 'project-card';
+        card.dataset.id = data.id;
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -107,11 +108,7 @@
         deleteButton.className = 'btn-action btn-delete';
         deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
         deleteButton.addEventListener('click', function () {
-            if (editingCard === card) {
-                clearForm();
-            }
-            card.remove();
-            ensureEmptyState();
+            eliminarProyecto(card);
         });
 
         actions.appendChild(editButton);
@@ -125,6 +122,9 @@
     }
 
     function updateCard(card, data) {
+        if (data.id) {
+            card.dataset.id = data.id;
+        }
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -139,34 +139,149 @@
         card.querySelector('.project-description').textContent = data.descripcion;
     }
 
-    form.addEventListener('submit', function (event) {
+    async function persistirProyecto(card) {
+        if (!card?.dataset.id) {
+            return;
+        }
+
+        const payload = {
+            nombre: card.dataset.nombre,
+            curso: card.dataset.curso,
+            descripcion: card.dataset.descripcion,
+            fechaEntrega: card.dataset.fecha
+        };
+
+        const response = await fetch(`/api/proyectos/${card.dataset.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error('No se pudo actualizar el proyecto.');
+        }
+    }
+
+    async function eliminarProyecto(card) {
+        if (editingCard === card) {
+            clearForm();
+        }
+
+        if (!card.dataset.id) {
+            card.remove();
+            ensureEmptyState();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/proyectos/${card.dataset.id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok && response.status !== 404) {
+                throw new Error('No se pudo eliminar el proyecto.');
+            }
+
+            card.remove();
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function cargarProyectos() {
+        try {
+            const response = await fetch('/api/proyectos');
+            if (!response.ok) {
+                throw new Error('No se pudieron cargar los proyectos.');
+            }
+
+            const proyectos = await response.json();
+            list.innerHTML = '';
+
+            proyectos.forEach((p) => {
+                const card = createCardElements({
+                    id: p.id,
+                    nombre: p.nombre,
+                    curso: p.curso,
+                    descripcion: p.descripcion,
+                    fecha: p.fechaEntrega?.split('T')[0] ?? ''
+                });
+                list.appendChild(card);
+            });
+
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+            ensureEmptyState();
+        }
+    }
+
+    form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
-            fecha: inputs.fecha.value
+            fechaEntrega: inputs.fecha.value
         };
 
-        if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
+        if (!data.nombre || !data.curso || !data.descripcion || !data.fechaEntrega) {
             return;
         }
 
-        if (editingCard) {
-            updateCard(editingCard, data);
-        } else {
-            const emptyEl = document.getElementById('emptyState');
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-            const card = createCardElements(data);
-            list.appendChild(card);
-        }
+        const isEditing = Boolean(editingCard);
+        const endpoint = isEditing && editingCard?.dataset.id ? `/api/proyectos/${editingCard.dataset.id}` : '/api/proyectos';
+        const method = isEditing && editingCard?.dataset.id ? 'PUT' : 'POST';
 
-        clearForm();
-        ensureEmptyState();
+        try {
+            const response = await fetch(endpoint, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo guardar el proyecto.');
+            }
+
+            const saved = await response.json();
+
+            if (isEditing && editingCard) {
+                updateCard(editingCard, {
+                    id: saved.id,
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega
+                });
+            } else {
+                const emptyEl = document.getElementById('emptyState');
+                if (emptyEl) {
+                    emptyEl.remove();
+                }
+                const card = createCardElements({
+                    id: saved.id,
+                    nombre: saved.nombre,
+                    curso: saved.curso,
+                    descripcion: saved.descripcion,
+                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega
+                });
+                list.appendChild(card);
+            }
+
+            clearForm();
+            ensureEmptyState();
+        } catch (error) {
+            console.error(error);
+        }
     });
 
+    cargarProyectos();
     ensureEmptyState();
 });
