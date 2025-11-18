@@ -1,7 +1,4 @@
-﻿
-
-/* ===== Base / Fondo ===== */
-:root {
+﻿:root {
     --bg: #181a1f;
     --panel: #23252b;
     --panel-2: #2d2f36;
@@ -12,6 +9,22 @@
     --shadow: 0 6px 16px rgba(0,0,0,.35);
     --radius: 8px;
 }
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin-right: 15%;
+    color: var(--text);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg) url("recourses/fondo.svg") no-repeat right bottom / cover;
+}
+
 /* NAV superior */
 .topnav {
     position: fixed;
@@ -35,11 +48,10 @@
         color: #e8e8e8;
         font-weight: 700;
         margin: 30px;
-        margin: 30px;
     }
 
         .topnav .brand i {
-            color: #02BEE1;
+            color: var(--cyan);
         }
 
     .topnav .nav-actions {
@@ -74,63 +86,18 @@
 
             .topnav .nav-actions .nav-link.active {
                 color: #fff;
-                border-color: #01a8c7;
+                border-color: var(--cyan-2);
                 box-shadow: 0 0 0 2px rgba(2,190,225,.15) inset;
             }
 
-/* ajusta el flujo por el nav fijo y el sidebar */
+/* Ajusta el flujo por el nav fijo y el sidebar */
 .main {
     margin-top: 64px;
-}
-/* separa del nav */
-@media (min-width: 701px) {
-    .main {
-        margin-left: 200px;
-    }
-    /* si mantienes la sidebar */
+    margin-left: 200px; /* ancho del sidebar */
+    padding: 24px;
 }
 
-@media (max-width: 700px) {
-    .main {
-        margin-left: 0;
-    }
-}
-
-/* Sección configuración demo */
-.config-panel {
-    margin-top: 24px;
-    background: #23252b;
-    border: 1px solid #3a3d44;
-    border-radius: 8px;
-    padding: 16px;
-}
-
-    .config-panel h2 {
-        margin: 0 0 8px;
-    }
-
-.save-hint {
-    margin-left: 12px;
-    color: #02BEE1;
-    font-weight: 600;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-html, body {
-    height: 100%;
-}
-
-body {
-    margin-right: 15%;
-    color: var(--text);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: var(--bg) url("recourses/fondo.svg") no-repeat right bottom / cover;
-}
-
-/* ===== Sidebar ===== */
+/* Sidebar */
 .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -160,12 +127,7 @@ body {
             background: rgba(2,190,225,.15);
         }
 
-/* ===== Main ===== */
-.main {
-    margin-left: 200px; /* ancho del sidebar */
-    padding: 24px;
-}
-
+/* Header */
 .header {
     display: flex;
     align-items: center;
@@ -175,6 +137,7 @@ body {
     margin-bottom: 16px;
 }
 
+/* Project form */
 .project-form {
     display: flex;
     align-items: center;
@@ -253,15 +216,12 @@ body {
     transition: background .2s ease, transform .2s ease;
 }
 
-.form-action .btn-create {
-    width: auto;
-}
+    .btn-create:hover {
+        background: var(--cyan-2);
+        transform: translateY(-1px);
+    }
 
-.btn-create:hover {
-    background: var(--cyan-2);
-    transform: translateY(-1px);
-}
-
+/* Projects list */
 .projects {
     margin-top: 32px;
     background: var(--panel);
@@ -395,152 +355,76 @@ body {
         background: rgba(229, 57, 53, .12);
         color: #ffd5d3;
     }
-/* ===== Título de sección ===== */
-.section-title {
+
+/* Badge de estado */
+.task-meta {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: #e6e6e6;
-    font-weight: 600;
-    margin: 6px 0 14px;
-    position: relative;
-    top: -45px;
-    left: -8px;
-}
-
-/* ===== Grid 2 por fila ===== */
-.cards-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-}
-
-/* ===== Tarjeta ===== */
-.course-card {
-    display: grid;
-    grid-template-columns: 120px 1fr; /* mini tarjeta izquierda + contenido */
-    gap: 16px;
-    background: var(--panel);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 14px;
-    border: 1px solid #3a3d44;
-}
-
-/* mini panel izquierdo con código */
-.thumb {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(165deg, #79d2e8 0%, #1fa6c6 45%, #0a87a2 100%);
-    border-radius: 10px;
-    height: 100%;
-    min-height: 90px;
-}
-
-.badge {
-    color: #fff;
-    font-weight: 800;
-    font-size: 22px;
-    text-shadow: 0 2px 4px rgba(0,0,0,.35);
-}
-
-.bubble {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: #e53935;
-    color: #fff;
-    width: 22px;
-    height: 22px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    font-size: 12px;
-    font-weight: 800;
-    box-shadow: 0 0 0 2px rgba(0,0,0,.25);
-}
-
-/* contenido derecho */
-.card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.card-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: space-between;
-}
-
-.course-name {
-    font-size: 15px;
-    letter-spacing: .2px;
-    margin: 0;
-    font-weight: 800;
-    color: #e9edf3;
-    text-transform: uppercase;
-}
-
-.program {
-    color: #cfd3dc;
-    font-size: 13px;
-}
-
-/* meta (horarios, aula) + acción */
-.meta {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
     gap: 10px;
-    background: linear-gradient(180deg, var(--panel-2), transparent);
-    border-radius: 8px;
-    padding: 10px 12px;
 }
 
-.meta-left {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    color: var(--muted);
-    font-size: 14px;
+.task-status {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 800;
+    border: 1px solid transparent;
 }
 
-    .meta-left i {
-        margin-right: 6px;
+    .task-status.is-pending {
+        background: #1e7b3b;
+        border-color: #27ae60;
+        color: #ecfdf3;
     }
 
-    .meta-left .sub {
-        color: #9aa1ac;
-        font-size: 13px;
+    .task-status.is-progress {
+        background: #7e5b00;
+        border-color: #f1c40f;
+        color: #fff7d6;
     }
 
-/* enlace Ingresar */
-.enter {
-    white-space: nowrap;
-    text-decoration: none;
-    color: #cfd3dc;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #444b56;
-    background: #2a2d34;
-    transition: .15s ease;
+    .task-status.is-done {
+        background: #145a86;
+        border-color: #3498db;
+        color: #e8f4ff;
+    }
+
+/* Botón de estado según estado */
+.project-card[data-estado="pendiente"] .btn-status {
+    border-color: rgba(39, 174, 96, 0.75);
+    background: rgba(39, 174, 96, 0.12);
+    color: #b9f6ca;
 }
 
-    .enter:hover {
-        background: #343742;
-        color: #fff;
-        border-color: #4e5562;
+    .project-card[data-estado="pendiente"] .btn-status:hover {
+        background: rgba(39, 174, 96, 0.2);
     }
 
-/* ===== Responsivo ===== */
+.project-card[data-estado="en_progreso"] .btn-status {
+    border-color: rgba(241, 196, 15, 0.85);
+    background: rgba(241, 196, 15, 0.12);
+    color: #ffeaa7;
+}
+
+    .project-card[data-estado="en_progreso"] .btn-status:hover {
+        background: rgba(241, 196, 15, 0.22);
+    }
+
+.project-card[data-estado="terminada"] .btn-status,
+.project-card[data-estado="terminada"] .btn-status.is-reset {
+    border-color: rgba(189, 195, 199, 0.8);
+    background: transparent;
+    color: #d0d3d4;
+}
+
+    .project-card[data-estado="terminada"] .btn-status:hover,
+    .project-card[data-estado="terminada"] .btn-status.is-reset:hover {
+        background: rgba(189, 195, 199, 0.15);
+    }
+
+/* Media queries (responsivo) */
 @media (max-width: 900px) {
     .cards-grid {
         grid-template-columns: 1fr;
@@ -555,12 +439,10 @@ body {
     }
 
     .main {
-        margin-left:  0;
-            
+        margin-left: 0;
+        margin-top: 64px;
     }
-}
 
-@media (max-width: 700px) {
     .header {
         flex-direction: column;
         align-items: flex-start;
@@ -574,11 +456,9 @@ body {
         gap: 12px;
     }
 
-    .form-field {
-        width: 100%;
-    }
-
-    .project-form input {
-        width: 100%;
-    }
+        .form-field,
+        .project-form input,
+        .project-form textarea {
+            width: 100%;
+        }
 }

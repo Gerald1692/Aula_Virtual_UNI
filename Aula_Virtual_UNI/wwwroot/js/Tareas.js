@@ -5,7 +5,9 @@
     const submitLabel = form?.querySelector('.btn-create .label-text');
     const STATUS_LABELS = {
         pendiente: 'Pendiente',
-        terminada: 'Terminada'
+        terminada: 'Terminada',
+        en_progreso: 'En Progreso'
+
     };
     let editingCard = null;
 
