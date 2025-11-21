@@ -246,6 +246,53 @@
             if (emptyEl) {
                 emptyEl.remove();
             }
+
+            console.log(data)
+
+            fetch('../Proyectos/InsertarProyecto', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+
+                .then(response => response.json())
+
+                .then(resultado => {
+
+                    if (resultado.ok) {
+
+                        Swal.fire({
+                            title: "Éxito!",
+                            text: `${resultado.mensaje}`,
+                            icon: "success",
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#297ea6'
+                        });
+
+
+
+
+                    } else {
+
+                        Swal.fire({
+                            title: "Advertencia",
+                            text: `${resultado.mensaje}`,
+                            icon: "warning",
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#297ea6'
+
+                        });
+
+                    }
+
+
+
+
+
+                })
+            
             const card = createCardElements(data);
             list.appendChild(card);
         }

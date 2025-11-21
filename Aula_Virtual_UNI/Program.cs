@@ -8,6 +8,8 @@ builder.Services.AddControllersWithViews();
 // SQL Server connection factory
 builder.Services.AddSingleton<Aula_Virtual_UNI.Data.ISqlConnectionFactory, Aula_Virtual_UNI.Data.SqlConnectionFactory>();
 builder.Services.AddScoped<Login>();
+builder.Services.AddScoped<ProyectosDAL>();
+
 
 // 🔹 Habilitar sesiones
 builder.Services.AddDistributedMemoryCache();

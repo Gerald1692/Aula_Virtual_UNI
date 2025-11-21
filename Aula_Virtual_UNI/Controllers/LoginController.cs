@@ -35,6 +35,15 @@ namespace Aula_Virtual_UNI.Controllers
 
                 HttpContext.Session.SetString("Nombre", u.NombreUsuario ?? "");
                 HttpContext.Session.SetString("Rol", u.Rol ?? "");
+
+                var ConfigCookie = new CookieOptions()
+                {
+                    Expires = DateTime.Now.AddMinutes(30),
+
+                };
+
+                Response.Cookies.Append("IdUsuario", Convert.ToString(u.IdUsuario), ConfigCookie);
+
             }
 
             return respuesta;
