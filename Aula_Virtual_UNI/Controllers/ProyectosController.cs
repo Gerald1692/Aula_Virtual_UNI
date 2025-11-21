@@ -15,6 +15,7 @@ namespace Aula_Virtual_UNI.Controllers
 
         public IActionResult V_Proyectos()
         {
+            ObtenerProyectos();
             return View();
         }
 

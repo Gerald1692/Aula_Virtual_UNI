@@ -1,11 +1,13 @@
 ﻿@{
     Layout = null;
-   
+
+    var ListaProyectos = ViewBag.ListaProyectos;
+
 }
 
 <!DOCTYPE html>
 <html lang="es">
-    <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aula Virtual - Proyectos</title>
@@ -13,6 +15,8 @@
     <link href="~/css/proyectos/proyectos.css" rel="stylesheet" />
     <link href="~/css/m_principal/MenuPrincipal.css" rel="stylesheet" />
     <link href="~/css/menu/menu.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Font Awesome -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -77,11 +81,97 @@
                 <i class="fa-solid fa-list-check"></i> Proyectos creados
             </h2>
             <div class="project-list" id="projectList">
+         
+
+                @foreach (var Proyecto in ListaProyectos)
+                {
+
+                    <article class="project-card"
+                             data-nombre="TRABAJO"
+                             data-curso="PROGRA"
+                             data-descripcion="programa"
+                             data-fecha="2025-11-11"
+                             data-estado="pendiente">
+                        <div class="project-card-header">
+                            <h3 class="project-title">@Proyecto.nombre</h3>
+                            <div class="task-meta">
+                                <span class="task-status is-pending">@Proyecto.estado</span>
+                                <span class="project-date">@Proyecto.fecha</span>
+                            </div>
+                        </div>
+
+                        <p class="project-course">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            <span class="course-text">@Proyecto.curso</span>
+                        </p>
+
+                        <p class="project-description">@Proyecto.descripcion</p>
+
+                        <div class="project-card-actions">
+                            <button type="button" class="btn-action btn-edit">
+                                <i class="fa-solid fa-pen-to-square"></i> Editar
+                            </button>
+
+                            <button type="button" class="btn-action btn-status">
+                                <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                            </button>
+
+                            <button type="button" class="btn-action btn-delete">
+                                <i class="fa-solid fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </article>
+
+                    
+                }
+
+
+
+                <article class="project-card"
+                         data-nombre="TRABAJO"
+                         data-curso="PROGRA"
+                         data-descripcion="programa"
+                         data-fecha="2025-11-11"
+                         data-estado="pendiente">
+                    <div class="project-card-header">
+                        <h3 class="project-title">TRABAJO</h3>
+                        <div class="task-meta">
+                            <span class="task-status is-pending">Pendiente</span>
+                            <span class="project-date">11 nov 2025</span>
+                        </div>
+                    </div>
+
+                    <p class="project-course">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        <span class="course-text">PROGRA</span>
+                    </p>
+
+                    <p class="project-description">programa</p>
+
+                    <div class="project-card-actions">
+                        <button type="button" class="btn-action btn-edit">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                        </button>
+
+                        <button type="button" class="btn-action btn-status">
+                            <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                        </button>
+
+                        <button type="button" class="btn-action btn-delete">
+                            <i class="fa-solid fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </article>
+
+
                 <p class="empty-state" id="emptyState">Aún no hay proyectos creados.</p>
             </div>
         </section>
     </main>
 
-    
+
 </body>
 </html>
+
+
+

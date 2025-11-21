@@ -1,9 +1,14 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('.project-form');
     const list = document.getElementById('projectList');
-    const emptyState = document.getElementById('emptyState');
     const submitLabel = form?.querySelector('.btn-create span.label-text');
     let editingCard = null;
+
+    const STATUS_LABELS = {
+        pendiente: 'Pendiente',
+        terminada: 'Terminada',
+        en_progreso: 'En Progreso'
+    };
 
     if (!form || !list) {
         return;
@@ -22,6 +27,47 @@
             return value;
         }
         return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function normalizeStatus(value) {
+        if (value === 'terminada') return 'terminada';
+        if (value === 'en_progreso') return 'en_progreso';
+        return 'pendiente';
+    }
+
+    function updateStatusBadge(badge, estado) {
+        const normalized = normalizeStatus(estado);
+        badge.textContent = STATUS_LABELS[normalized] || '';
+        badge.classList.remove('is-done', 'is-pending', 'is-progress');
+        if (normalized === 'terminada') {
+            badge.classList.add('is-done');
+        } else if (normalized === 'en_progreso') {
+            badge.classList.add('is-progress');
+        } else {
+            badge.classList.add('is-pending');
+        }
+        return normalized;
+    }
+
+    function updateStatusButton(button, estado) {
+        const normalized = normalizeStatus(estado);
+        button.innerHTML = `<i class="fa-solid fa-flag"></i> Estado: ${STATUS_LABELS[normalized]}`;
+        button.classList.toggle('is-reset', normalized === 'terminada');
+    }
+
+    function applyStatus(card, estado) {
+        const normalized = normalizeStatus(estado);
+        card.dataset.estado = normalized;
+
+        const badge = card.querySelector('.task-status');
+        if (badge) {
+            updateStatusBadge(badge, normalized);
+        }
+
+        const toggleButton = card.querySelector('.btn-status');
+        if (toggleButton) {
+            updateStatusButton(toggleButton, normalized);
+        }
     }
 
     function ensureEmptyState() {
@@ -56,6 +102,8 @@
     }
 
     function createCardElements(data) {
+        const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
+
         const card = document.createElement('article');
         card.className = 'project-card';
         card.dataset.id = data.id;
@@ -63,6 +111,7 @@
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
+        card.dataset.estado = normalizedEstado;
 
         const header = document.createElement('div');
         header.className = 'project-card-header';
@@ -71,12 +120,21 @@
         title.className = 'project-title';
         title.textContent = data.nombre;
 
+        const meta = document.createElement('div');
+        meta.className = 'task-meta';
+
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'task-status';
+
         const date = document.createElement('span');
         date.className = 'project-date';
         date.textContent = formatDate(data.fecha);
 
+        meta.appendChild(statusBadge);
+        meta.appendChild(date);
+
         header.appendChild(title);
-        header.appendChild(date);
+        header.appendChild(meta);
 
         const course = document.createElement('p');
         course.className = 'project-course';
@@ -103,6 +161,27 @@
             populateForm(card);
         });
 
+        const statusButton = document.createElement('button');
+        statusButton.type = 'button';
+        statusButton.className = 'btn-action btn-status';
+        statusButton.addEventListener('click', function () {
+            let nextState;
+            switch (card.dataset.estado) {
+                case 'pendiente':
+                    nextState = 'en_progreso';
+                    break;
+                case 'en_progreso':
+                    nextState = 'terminada';
+                    break;
+                default:
+                    nextState = 'pendiente';
+            }
+            applyStatus(card, nextState);
+            if (editingCard === card) {
+                editingCard.dataset.estado = nextState;
+            }
+        });
+
         const deleteButton = document.createElement('button');
         deleteButton.type = 'button';
         deleteButton.className = 'btn-action btn-delete';
@@ -112,12 +191,16 @@
         });
 
         actions.appendChild(editButton);
+        actions.appendChild(statusButton);
         actions.appendChild(deleteButton);
 
         card.appendChild(header);
         card.appendChild(course);
         card.appendChild(description);
         card.appendChild(actions);
+
+        applyStatus(card, normalizedEstado);
+
         return card;
     }
 
@@ -137,6 +220,8 @@
             courseText.textContent = data.curso;
         }
         card.querySelector('.project-description').textContent = data.descripcion;
+
+        applyStatus(card, card.dataset.estado || 'pendiente');
     }
 
     async function persistirProyecto(card) {
