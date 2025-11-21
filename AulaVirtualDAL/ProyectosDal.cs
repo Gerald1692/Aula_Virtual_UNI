@@ -1,100 +1,132 @@
-using Entities;
+﻿using Entities;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AulaVirtualDAL
 {
-    public class ProyectosDal
+    public class ProyectosDAL
     {
-        private readonly string _connectionString;
 
-        public ProyectosDal(string connectionString)
+        public Respuesta<Proyectos> InsertarProyecto(Proyectos Proyecto, string Conexion)
         {
-            _connectionString = connectionString;
-        }
+            Respuesta<Proyectos> respuesta = new Respuesta<Proyectos>();
 
-        public async Task<IEnumerable<Proyecto>> ObtenerProyectosAsync()
-        {
-            var proyectos = new List<Proyecto>();
-
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "SELECT Id, Nombre, Curso, FechaEntrega, Descripcion FROM Proyectos ORDER BY FechaEntrega DESC",
-                connection);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                proyectos.Add(new Proyecto
+                using (SqlConnection connection = new SqlConnection(Conexion))
                 {
-                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                    Curso = reader.GetString(reader.GetOrdinal("Curso")),
-                    FechaEntrega = reader.GetDateTime(reader.GetOrdinal("FechaEntrega")),
-                    Descripcion = reader.GetString(reader.GetOrdinal("Descripcion"))
-                });
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("spInsertarProyecto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 50) { Value = Proyecto.nombre });
+                        command.Parameters.Add(new SqlParameter("@pDescripcion", SqlDbType.NVarChar, 250) { Value = Proyecto.descripcion });
+                        command.Parameters.Add(new SqlParameter("@pFechainicio", SqlDbType.Date) { Value = Proyecto.fecha_inicio });
+                        command.Parameters.Add(new SqlParameter("@pFechaFinalizacion", SqlDbType.Date) { Value = Proyecto.fecha });
+                        command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = Proyecto.id_profesor });
+                        command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = Proyecto.curso });
+                        command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = Proyecto.estado });
+
+
+                        int FilasAfectadas = command.ExecuteNonQuery();
+
+
+                        if (FilasAfectadas > 0)
+                        {
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"El proyecto ha sido agregado de manera exitosa";
+
+
+                        }
+                        else
+                        {
+
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "Ha ocurrido un error a la hora de agregar el proyecto";
+
+
+                        }
+
+
+                    }
+                }
             }
-
-            return proyectos;
-        }
-
-        public async Task<Proyecto> CrearProyectoAsync(Proyecto proyecto)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "INSERT INTO Proyectos (Nombre, Curso, FechaEntrega, Descripcion) OUTPUT INSERTED.Id VALUES (@Nombre, @Curso, @FechaEntrega, @Descripcion)",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = proyecto.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = proyecto.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = proyecto.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = proyecto.Descripcion });
-
-            var newId = (int)await command.ExecuteScalarAsync();
-            proyecto.Id = newId;
-
-            return proyecto;
-        }
-
-        public async Task<Proyecto?> ActualizarProyectoAsync(int id, Proyecto proyecto)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "UPDATE Proyectos SET Nombre = @Nombre, Curso = @Curso, FechaEntrega = @FechaEntrega, Descripcion = @Descripcion WHERE Id = @Id",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = proyecto.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = proyecto.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = proyecto.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = proyecto.Descripcion });
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
-
-            var affected = await command.ExecuteNonQueryAsync();
-            if (affected == 0)
+            catch (Exception ex)
             {
-                return null;
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
             }
 
-            proyecto.Id = id;
-            return proyecto;
+            return respuesta;
         }
 
-        public async Task<bool> EliminarProyectoAsync(int id)
+        public Respuesta<List<Proyectos>> ObtenerProyectos(string Conexion)
         {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            Respuesta<List<Proyectos>> respuesta = new Respuesta<List<Proyectos>>();
+            List<Proyectos> ListaProyectos = new List<Proyectos>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
 
-            await using var command = new SqlCommand("DELETE FROM Proyectos WHERE Id = @Id", connection);
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+                    using (SqlCommand command = new SqlCommand("spObtenerProyectos", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
 
-            var affected = await command.ExecuteNonQueryAsync();
-            return affected > 0;
+                       
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+
+                                Proyectos Proyecto = new Proyectos { 
+                                
+                                    id_proyecto = (int)reader["id_proyecto"],
+                                   nombre = (string)reader["nombre"],
+                                    descripcion = (string)reader["descripcion"],
+                                    fecha_inicio = (DateTime)reader["fecha_inicio"],
+                                    fecha = (DateTime)reader["fecha_finalizacion"],
+                                    id_profesor = (int)reader["id_profesor"],
+                                    curso = (string)reader["curso"],
+                                    estado= (string)reader["estado"]
+                                  
+                                };
+
+                                ListaProyectos.Add(Proyecto);
+
+
+
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                            respuesta.ValorRetorno = ListaProyectos;
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
         }
+
+
+
     }
 }
