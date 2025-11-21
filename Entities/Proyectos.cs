@@ -18,7 +18,7 @@ namespace Entities
         public string? curso { get; set; }
         public string? estado { get; set; }
 
-
+        
 
 
     }
