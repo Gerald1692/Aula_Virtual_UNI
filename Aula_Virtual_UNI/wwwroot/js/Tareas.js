@@ -96,7 +96,6 @@
         const normalizedEstado = normalizeStatus(data.estado);
         const card = document.createElement('article');
         card.className = 'project-card task-card';
-        card.dataset.id = data.id;
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -155,15 +154,11 @@
         statusButton.type = 'button';
         statusButton.className = 'btn-action btn-status';
         statusButton.addEventListener('click', () => {
-            const previous = card.dataset.estado;
-            const nextState = previous === 'terminada' ? 'pendiente' : 'terminada';
+            const nextState = card.dataset.estado === 'terminada' ? 'pendiente' : 'terminada';
             applyStatus(card, nextState);
             if (editingCard === card) {
                 editingCard.dataset.estado = nextState;
             }
-            persistirTarea(card).catch(() => {
-                applyStatus(card, previous);
-            });
         });
 
         const deleteButton = document.createElement('button');
@@ -171,7 +166,11 @@
         deleteButton.className = 'btn-action btn-delete';
         deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
         deleteButton.addEventListener('click', () => {
-            eliminarTarea(card);
+            if (editingCard === card) {
+                clearForm();
+            }
+            card.remove();
+            ensureEmptyState();
         });
 
         actions.appendChild(editButton);
@@ -188,9 +187,6 @@
     }
 
     function updateCard(card, data) {
-        if (data.id) {
-            card.dataset.id = data.id;
-        }
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -205,158 +201,35 @@
         applyStatus(card, card.dataset.estado);
     }
 
-    async function persistirTarea(card) {
-        if (!card?.dataset.id) {
-            return;
-        }
-
-        const payload = {
-            nombre: card.dataset.nombre,
-            curso: card.dataset.curso,
-            descripcion: card.dataset.descripcion,
-            fechaEntrega: card.dataset.fecha,
-            estado: card.dataset.estado
-        };
-
-        const response = await fetch(`/api/tareas/${card.dataset.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error('No se pudo actualizar la tarea.');
-        }
-
-        const saved = await response.json();
-        card.dataset.id = saved.id;
-        applyStatus(card, saved.estado ?? card.dataset.estado);
-    }
-
-    async function eliminarTarea(card) {
-        if (editingCard === card) {
-            clearForm();
-        }
-
-        if (!card.dataset.id) {
-            card.remove();
-            ensureEmptyState();
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/tareas/${card.dataset.id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok && response.status !== 404) {
-                throw new Error('No se pudo eliminar la tarea.');
-            }
-
-            card.remove();
-            ensureEmptyState();
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    async function cargarTareas() {
-        try {
-            const response = await fetch('/api/tareas');
-            if (!response.ok) {
-                throw new Error('No se pudieron cargar las tareas.');
-            }
-
-            const tareas = await response.json();
-            list.innerHTML = '';
-
-            tareas.forEach((t) => {
-                const card = createCardElements({
-                    id: t.id,
-                    nombre: t.nombre,
-                    curso: t.curso,
-                    descripcion: t.descripcion,
-                    fecha: t.fechaEntrega?.split('T')[0] ?? '',
-                    estado: t.estado ?? 'pendiente'
-                });
-                list.appendChild(card);
-            });
-
-            ensureEmptyState();
-        } catch (error) {
-            console.error(error);
-            ensureEmptyState();
-        }
-    }
-
-    form.addEventListener('submit', async (event) => {
+    form.addEventListener('submit', (event) => {
         event.preventDefault();
 
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
-            fechaEntrega: inputs.fecha.value,
+            fecha: inputs.fecha.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente'
         };
 
-        if (!data.nombre || !data.curso || !data.descripcion || !data.fechaEntrega) {
+        if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
             return;
         }
 
-        const isEditing = Boolean(editingCard);
-        const endpoint = isEditing && editingCard?.dataset.id ? `/api/tareas/${editingCard.dataset.id}` : '/api/tareas';
-        const method = isEditing && editingCard?.dataset.id ? 'PUT' : 'POST';
-
-        try {
-            const response = await fetch(endpoint, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                throw new Error('No se pudo guardar la tarea.');
+        if (editingCard) {
+            updateCard(editingCard, data);
+        } else {
+            const emptyEl = emptyState();
+            if (emptyEl) {
+                emptyEl.remove();
             }
-
-            const saved = await response.json();
-
-            if (isEditing && editingCard) {
-                updateCard(editingCard, {
-                    id: saved.id,
-                    nombre: saved.nombre,
-                    curso: saved.curso,
-                    descripcion: saved.descripcion,
-                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega,
-                    estado: saved.estado ?? data.estado
-                });
-            } else {
-                const emptyEl = emptyState();
-                if (emptyEl) {
-                    emptyEl.remove();
-                }
-                const card = createCardElements({
-                    id: saved.id,
-                    nombre: saved.nombre,
-                    curso: saved.curso,
-                    descripcion: saved.descripcion,
-                    fecha: saved.fechaEntrega?.split('T')[0] ?? data.fechaEntrega,
-                    estado: saved.estado ?? data.estado
-                });
-                list.appendChild(card);
-            }
-
-            clearForm();
-            ensureEmptyState();
-        } catch (error) {
-            console.error(error);
+            const card = createCardElements(data);
+            list.appendChild(card);
         }
+
+        clearForm();
+        ensureEmptyState();
     });
 
-    cargarTareas();
     ensureEmptyState();
 });
