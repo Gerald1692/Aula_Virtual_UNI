@@ -1,17 +1,23 @@
-﻿using AulaVirtualDAL;
+﻿using Microsoft.AspNetCore.Mvc;
 using Entities;
-using Microsoft.AspNetCore.Mvc;
+using System.Runtime.CompilerServices;
+using AulaVirtualDAL;
 
 namespace Aula_Virtual_UNI.Controllers
 {
     public class ProyectosController : Controller
     {
-        private readonly ProyectosDal _proyectosDal;
 
-        public ProyectosController(ProyectosDal proyectosDal)
+        private readonly ProyectosDAL AccesoDAL;
+        private readonly IConfiguration _configuration;
+
+        public ProyectosController(ProyectosDAL proyectosDAL, IConfiguration configuration)
         {
-            _proyectosDal = proyectosDal;
+            AccesoDAL = proyectosDAL;
+            _configuration = configuration;
         }
+
+
 
         public IActionResult V_Proyectos()
         {
@@ -19,52 +25,83 @@ namespace Aula_Virtual_UNI.Controllers
             return View();
         }
 
-        [HttpGet("api/proyectos")]
-        public async Task<IActionResult> ObtenerProyectos()
+        [HttpPost]
+        public Respuesta<Proyectos> InsertarProyecto([FromBody] Proyectos Proyecto)
         {
-            var proyectos = await _proyectosDal.ObtenerProyectosAsync();
-            return Ok(proyectos);
-        }
 
-        [HttpPost("api/proyectos")]
-        public async Task<IActionResult> CrearProyecto([FromBody] Proyecto proyecto)
-        {
-            if (!ModelState.IsValid || proyecto == null)
+            Respuesta<Proyectos> reply = new Respuesta<Proyectos>();
+
+            try
             {
-                return BadRequest("Datos de proyecto inválidos.");
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                string IdUsuario = Request.Cookies["IdUsuario"];
+                Proyecto.id_profesor = Convert.ToInt32(IdUsuario);
+
+                var respuesta = AccesoDAL.InsertarProyecto(Proyecto, conexion);
+
+                if (respuesta != null)
+                {
+
+                    reply = respuesta;
+
+
+                }
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                reply.Ok = false;
+                reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método InsertarProyecto {ex.Message}";
             }
 
-            var creado = await _proyectosDal.CrearProyectoAsync(proyecto);
-            return Created($"/api/proyectos/{creado.Id}", creado);
+            return reply;
+
+
+
         }
 
-        [HttpPut("api/proyectos/{id:int}")]
-        public async Task<IActionResult> ActualizarProyecto(int id, [FromBody] Proyecto proyecto)
+        [HttpPost]
+        public Respuesta<List<Proyectos>> ObtenerProyectos()
         {
-            if (!ModelState.IsValid || proyecto == null)
+
+            Respuesta<List<Proyectos>> reply = new Respuesta<List<Proyectos>>();
+
+            try
             {
-                return BadRequest("Datos de proyecto inválidos.");
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+
+
+                var respuesta = AccesoDAL.ObtenerProyectos(conexion);
+
+                if (respuesta != null)
+                {
+
+                    ViewBag.ListaProyectos = respuesta.ValorRetorno;
+
+
+                }
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                reply.Ok = false;
+                reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método ObtenerProyectos {ex.Message}";
             }
 
-            var actualizado = await _proyectosDal.ActualizarProyectoAsync(id, proyecto);
-            if (actualizado == null)
-            {
-                return NotFound();
-            }
+            return reply;
 
-            return Ok(actualizado);
+
+
         }
 
-        [HttpDelete("api/proyectos/{id:int}")]
-        public async Task<IActionResult> EliminarProyecto(int id)
-        {
-            var eliminado = await _proyectosDal.EliminarProyectoAsync(id);
-            if (!eliminado)
-            {
-                return NotFound();
-            }
 
-            return NoContent();
-        }
     }
 }
