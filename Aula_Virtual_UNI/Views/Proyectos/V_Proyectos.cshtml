@@ -24,6 +24,14 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
     <script src="~/js/proyecto.js"></script>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
 </head>
 
 <body>
@@ -111,6 +119,23 @@
                         <p class="project-description">@Proyecto.descripcion</p>
 
                         <div class="project-card-actions">
+
+                            <!--Este es el dropdown-->
+                            <div class="container">
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown1" data-toggle="dropdown">
+                                        Alumnoa
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="http://www.google.com">Google</a>
+                                        <a class="dropdown-item" href="http://www.bing.com">Bing</a>
+                                        <a class="dropdown-item" href="http://www.yahoo.com">Yahoo</a>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
                             <button type="button" class="btn-action btn-edit">
                                 <i class="fa-solid fa-pen-to-square"></i> Editar
                             </button>
