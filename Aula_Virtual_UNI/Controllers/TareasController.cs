@@ -1,73 +1,107 @@
-﻿using AulaVirtualDAL;
-using Entities;
 using Microsoft.AspNetCore.Mvc;
+using Entities;
+using System.Runtime.CompilerServices;
+using AulaVirtualDAL;
 
 namespace Aula_Virtual_UNI.Controllers
 {
     public class TareasController : Controller
     {
-        private readonly TareasDal _tareasDal;
 
-        public TareasController(TareasDal tareasDal)
+        private readonly TareasDAL AccesoDAL;
+        private readonly IConfiguration _configuration;
+
+        public TareasController(TareasDAL tareasDAL, IConfiguration configuration)
         {
-            _tareasDal = tareasDal;
+            AccesoDAL = tareasDAL;
+            _configuration = configuration;
         }
+
+
 
         public IActionResult V_Tareas()
         {
+            ObtenerTareas();
             return View();
         }
 
-        [HttpGet("api/tareas")]
-        public async Task<IActionResult> ObtenerTareas()
+        [HttpPost]
+        public Respuesta<Tarea> InsertarTarea([FromBody] Tarea Tarea)
         {
-            var tareas = await _tareasDal.ObtenerTareasAsync();
-            return Ok(tareas);
-        }
 
-        [HttpPost("api/tareas")]
-        public async Task<IActionResult> CrearTarea([FromBody] Tarea tarea)
-        {
-            if (!ModelState.IsValid || tarea == null)
+            Respuesta<Tarea> reply = new Respuesta<Tarea>();
+
+            try
             {
-                return BadRequest("Datos de tarea inválidos.");
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                string IdUsuario = Request.Cookies["IdUsuario"];
+                Tarea.id_profesor = Convert.ToInt32(IdUsuario);
+
+                var respuesta = AccesoDAL.InsertarTarea(Tarea, conexion);
+
+                if (respuesta != null)
+                {
+
+                    reply = respuesta;
+
+
+                }
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                reply.Ok = false;
+                reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método InsertarTarea {ex.Message}";
             }
 
-            tarea.Estado = string.IsNullOrWhiteSpace(tarea.Estado) ? "pendiente" : tarea.Estado;
+            return reply;
 
-            var creada = await _tareasDal.CrearTareaAsync(tarea);
-            return Created($"/api/tareas/{creada.Id}", creada);
+
+
         }
 
-        [HttpPut("api/tareas/{id:int}")]
-        public async Task<IActionResult> ActualizarTarea(int id, [FromBody] Tarea tarea)
+        [HttpPost]
+        public Respuesta<List<Tarea>> ObtenerTareas()
         {
-            if (!ModelState.IsValid || tarea == null)
+
+            Respuesta<List<Tarea>> reply = new Respuesta<List<Tarea>>();
+
+            try
             {
-                return BadRequest("Datos de tarea inválidos.");
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+
+
+                var respuesta = AccesoDAL.ObtenerTareas(conexion);
+
+                if (respuesta != null)
+                {
+
+                    ViewBag.ListaTareas = respuesta.ValorRetorno;
+
+
+                }
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+
+                reply.Ok = false;
+                reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método ObtenerTareas {ex.Message}";
             }
 
-            tarea.Estado = string.IsNullOrWhiteSpace(tarea.Estado) ? "pendiente" : tarea.Estado;
+            return reply;
 
-            var actualizada = await _tareasDal.ActualizarTareaAsync(id, tarea);
-            if (actualizada == null)
-            {
-                return NotFound();
-            }
 
-            return Ok(actualizada);
+
         }
 
-        [HttpDelete("api/tareas/{id:int}")]
-        public async Task<IActionResult> EliminarTarea(int id)
-        {
-            var eliminada = await _tareasDal.EliminarTareaAsync(id);
-            if (!eliminada)
-            {
-                return NotFound();
-            }
 
-            return NoContent();
-        }
     }
 }

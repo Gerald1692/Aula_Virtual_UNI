@@ -1,106 +1,130 @@
 using Entities;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AulaVirtualDAL
 {
-    public class TareasDal
+    public class TareasDAL
     {
-        private readonly string _connectionString;
 
-        public TareasDal(string connectionString)
+        public Respuesta<Tarea> InsertarTarea(Tarea Tarea, string Conexion)
         {
-            _connectionString = connectionString;
-        }
+            Respuesta<Tarea> respuesta = new Respuesta<Tarea>();
 
-        public async Task<IEnumerable<Tarea>> ObtenerTareasAsync()
-        {
-            var tareas = new List<Tarea>();
-
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "SELECT Id, Nombre, Curso, FechaEntrega, Descripcion, Estado FROM Tareas ORDER BY FechaEntrega DESC",
-                connection);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                tareas.Add(new Tarea
+                using (SqlConnection connection = new SqlConnection(Conexion))
                 {
-                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                    Curso = reader.GetString(reader.GetOrdinal("Curso")),
-                    FechaEntrega = reader.GetDateTime(reader.GetOrdinal("FechaEntrega")),
-                    Descripcion = reader.GetString(reader.GetOrdinal("Descripcion")),
-                    Estado = reader.GetString(reader.GetOrdinal("Estado"))
-                });
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("spInsertarTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 200) { Value = Tarea.Nombre });
+                        command.Parameters.Add(new SqlParameter("@pDescripcion", SqlDbType.NVarChar, -1) { Value = Tarea.Descripcion });
+                        command.Parameters.Add(new SqlParameter("@pFechaEntrega", SqlDbType.Date) { Value = Tarea.FechaEntrega });
+                        command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = Tarea.id_profesor });
+                        command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 100) { Value = Tarea.Curso });
+                        command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 20) { Value = Tarea.Estado });
+
+
+                        int FilasAfectadas = command.ExecuteNonQuery();
+
+
+                        if (FilasAfectadas > 0)
+                        {
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"La tarea ha sido agregada de manera exitosa";
+
+
+                        }
+                        else
+                        {
+
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "Ha ocurrido un error a la hora de agregar la tarea";
+
+
+                        }
+
+
+                    }
+                }
             }
-
-            return tareas;
-        }
-
-        public async Task<Tarea> CrearTareaAsync(Tarea tarea)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "INSERT INTO Tareas (Nombre, Curso, FechaEntrega, Descripcion, Estado) OUTPUT INSERTED.Id VALUES (@Nombre, @Curso, @FechaEntrega, @Descripcion, @Estado)",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = tarea.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = tarea.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = tarea.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = tarea.Descripcion });
-            command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = tarea.Estado });
-
-            var newId = (int)await command.ExecuteScalarAsync();
-            tarea.Id = newId;
-
-            return tarea;
-        }
-
-        public async Task<Tarea?> ActualizarTareaAsync(int id, Tarea tarea)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "UPDATE Tareas SET Nombre = @Nombre, Curso = @Curso, FechaEntrega = @FechaEntrega, Descripcion = @Descripcion, Estado = @Estado WHERE Id = @Id",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = tarea.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = tarea.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = tarea.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = tarea.Descripcion });
-            command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = tarea.Estado });
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
-
-            var affected = await command.ExecuteNonQueryAsync();
-            if (affected == 0)
+            catch (Exception ex)
             {
-                return null;
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
             }
 
-            tarea.Id = id;
-            return tarea;
+            return respuesta;
         }
 
-        public async Task<bool> EliminarTareaAsync(int id)
+        public Respuesta<List<Tarea>> ObtenerTareas(string Conexion)
         {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
 
-            await using var command = new SqlCommand(
-                "DELETE FROM Tareas WHERE Id = @Id",
-                connection);
+                    using (SqlCommand command = new SqlCommand("spObtenerTareas", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
 
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+                       
 
-            var affected = await command.ExecuteNonQueryAsync();
-            return affected > 0;
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+
+                                Tarea Tarea = new Tarea
+                                {
+
+                                    Id = (int)reader["Id"],
+                                    Nombre = (string)reader["Nombre"],
+                                    Descripcion = (string)reader["Descripcion"],
+                                    FechaEntrega = (DateTime)reader["FechaEntrega"],
+                                    id_profesor = (int)reader["id_profesor"],
+                                    Curso = (string)reader["Curso"],
+                                    Estado = (string)reader["Estado"]
+
+                                };
+
+                                ListaTareas.Add(Tarea);
+
+
+
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                            respuesta.ValorRetorno = ListaTareas;
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
         }
+
+
+
     }
 }

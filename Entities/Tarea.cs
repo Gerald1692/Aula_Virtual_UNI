@@ -8,5 +8,6 @@ namespace Entities
         public DateTime FechaEntrega { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public string Estado { get; set; } = "pendiente";
+        public int id_profesor { get; set; }
     }
 }

@@ -1,6 +1,6 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
-    const form = document.querySelector('.project-form');
-    const list = document.getElementById('projectList');
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('.task-form');
+    const list = document.getElementById('taskList');
     const submitLabel = form?.querySelector('.btn-create span.label-text');
     let editingCard = null;
 
@@ -75,7 +75,7 @@
             const message = document.createElement('p');
             message.className = 'empty-state';
             message.id = 'emptyState';
-            message.textContent = 'Aún no hay proyectos creados.';
+            message.textContent = 'Aún no hay tareas creadas.';
             list.appendChild(message);
         }
     }
@@ -105,7 +105,7 @@
         const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
 
         const card = document.createElement('article');
-        card.className = 'project-card';
+        card.className = 'task-card';
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -113,10 +113,10 @@
         card.dataset.estado = normalizedEstado;
 
         const header = document.createElement('div');
-        header.className = 'project-card-header';
+        header.className = 'task-card-header';
 
         const title = document.createElement('h3');
-        title.className = 'project-title';
+        title.className = 'task-title';
         title.textContent = data.nombre;
 
         const meta = document.createElement('div');
@@ -126,7 +126,7 @@
         statusBadge.className = 'task-status';
 
         const date = document.createElement('span');
-        date.className = 'project-date';
+        date.className = 'task-date';
         date.textContent = formatDate(data.fecha);
 
         meta.appendChild(statusBadge);
@@ -136,7 +136,7 @@
         header.appendChild(meta);
 
         const course = document.createElement('p');
-        course.className = 'project-course';
+        course.className = 'task-course';
         const courseIcon = document.createElement('i');
         courseIcon.className = 'fa-solid fa-graduation-cap';
         course.appendChild(courseIcon);
@@ -146,11 +146,11 @@
         course.appendChild(courseText);
 
         const description = document.createElement('p');
-        description.className = 'project-description';
+        description.className = 'task-description';
         description.textContent = data.descripcion;
 
         const actions = document.createElement('div');
-        actions.className = 'project-card-actions';
+        actions.className = 'task-card-actions';
 
         // Create dropdown container
         const dropdownContainer = document.createElement('div');
@@ -255,13 +255,13 @@
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
 
-        card.querySelector('.project-title').textContent = data.nombre;
-        card.querySelector('.project-date').textContent = formatDate(data.fecha);
+        card.querySelector('.task-title').textContent = data.nombre;
+        card.querySelector('.task-date').textContent = formatDate(data.fecha);
         const courseText = card.querySelector('.course-text');
         if (courseText) {
             courseText.textContent = data.curso;
         }
-        card.querySelector('.project-description').textContent = data.descripcion;
+        card.querySelector('.task-description').textContent = data.descripcion;
 
         applyStatus(card, card.dataset.estado || 'pendiente');
     }
@@ -291,7 +291,7 @@
 
             console.log(data)
 
-            fetch('../Proyectos/InsertarProyecto', {
+            fetch('../Tareas/InsertarTarea', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
