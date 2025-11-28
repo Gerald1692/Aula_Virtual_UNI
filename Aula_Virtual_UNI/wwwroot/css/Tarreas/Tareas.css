@@ -386,6 +386,11 @@ body {
     flex-wrap: wrap;
 }
 
+.dropdown {
+    left: 568px;
+    top: 43px;
+}
+
 .btn-action {
     border-radius: 6px;
     border: 1px solid #3a3d44;
