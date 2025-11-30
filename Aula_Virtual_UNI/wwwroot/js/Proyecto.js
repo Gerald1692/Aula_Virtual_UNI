@@ -2,6 +2,7 @@
     const form = document.querySelector('.project-form');
     const list = document.getElementById('projectList');
     const submitLabel = form?.querySelector('.btn-create span.label-text');
+    const template = document.getElementById('project-card-template');
     let editingCard = null;
 
     const STATUS_LABELS = {
@@ -10,7 +11,7 @@
         en_progreso: 'En Progreso'
     };
 
-    if (!form || !list) {
+    if (!form || !list || !template) {
         return;
     }
 
@@ -21,6 +22,7 @@
         fecha: form.elements['fecha']
     };
 
+    // ========== UTILIDADES ==========
     function formatDate(value) {
         const date = new Date(value + 'T00:00:00');
         if (isNaN(date)) {
@@ -71,12 +73,17 @@
     }
 
     function ensureEmptyState() {
-        if (list.children.length === 0 && !document.getElementById('emptyState')) {
+        const emptyState = document.getElementById('emptyState');
+        const hasCards = list.querySelector('.project-card');
+        
+        if (!hasCards && !emptyState) {
             const message = document.createElement('p');
             message.className = 'empty-state';
             message.id = 'emptyState';
             message.textContent = 'Aún no hay proyectos creados.';
             list.appendChild(message);
+        } else if (hasCards && emptyState) {
+            emptyState.remove();
         }
     }
 
@@ -101,110 +108,61 @@
         }
     }
 
-    function createCardElements(data) {
+    // ========== CREAR TARJETA DESDE TEMPLATE ==========
+    function createCardFromTemplate(data) {
         const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
+        
+        // Clonar el template
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.project-card');
 
-        const card = document.createElement('article');
-        card.className = 'project-card';
+        // Establecer data attributes
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
         card.dataset.estado = normalizedEstado;
 
-        const header = document.createElement('div');
-        header.className = 'project-card-header';
+        // Llenar contenido
+        card.querySelector('.project-title').textContent = data.nombre;
+        card.querySelector('.project-date').textContent = formatDate(data.fecha);
+        card.querySelector('.course-text').textContent = data.curso;
+        card.querySelector('.project-description').textContent = data.descripcion;
 
-        const title = document.createElement('h3');
-        title.className = 'project-title';
-        title.textContent = data.nombre;
+        // Aplicar estado
+        applyStatus(card, normalizedEstado);
 
-        const meta = document.createElement('div');
-        meta.className = 'task-meta';
+        // Agregar event listeners
+        attachCardEvents(card);
 
-        const statusBadge = document.createElement('span');
-        statusBadge.className = 'task-status';
+        return card;
+    }
 
-        const date = document.createElement('span');
-        date.className = 'project-date';
-        date.textContent = formatDate(data.fecha);
+    function updateCard(card, data) {
+        card.dataset.nombre = data.nombre;
+        card.dataset.curso = data.curso;
+        card.dataset.descripcion = data.descripcion;
+        card.dataset.fecha = data.fecha;
 
-        meta.appendChild(statusBadge);
-        meta.appendChild(date);
+        card.querySelector('.project-title').textContent = data.nombre;
+        card.querySelector('.project-date').textContent = formatDate(data.fecha);
+        card.querySelector('.course-text').textContent = data.curso;
+        card.querySelector('.project-description').textContent = data.descripcion;
 
-        header.appendChild(title);
-        header.appendChild(meta);
+        applyStatus(card, card.dataset.estado || 'pendiente');
+    }
 
-        const course = document.createElement('p');
-        course.className = 'project-course';
-        const courseIcon = document.createElement('i');
-        courseIcon.className = 'fa-solid fa-graduation-cap';
-        course.appendChild(courseIcon);
-        const courseText = document.createElement('span');
-        courseText.className = 'course-text';
-        courseText.textContent = data.curso;
-        course.appendChild(courseText);
-
-        const description = document.createElement('p');
-        description.className = 'project-description';
-        description.textContent = data.descripcion;
-
-        const actions = document.createElement('div');
-        actions.className = 'project-card-actions';
-
-        // Create dropdown container
-        const dropdownContainer = document.createElement('div');
-        dropdownContainer.className = 'container';
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'dropdown';
-
-        const dropdownButton = document.createElement('button');
-        dropdownButton.className = 'btn btn-primary dropdown-toggle';
-        dropdownButton.type = 'button';
-        dropdownButton.id = 'dropdown' + Date.now();
-        dropdownButton.setAttribute('data-toggle', 'dropdown');
-        dropdownButton.textContent = 'Asignar Alumnos';
-
-        const dropdownMenu = document.createElement('div');
-        dropdownMenu.className = 'dropdown-menu';
-
-        // Add sample dropdown items (you can modify this to load actual students)
-        const item1 = document.createElement('a');
-        item1.className = 'dropdown-item';
-        item1.href = 'http://www.google.com';
-        item1.textContent = 'Google';
-
-        const item2 = document.createElement('a');
-        item2.className = 'dropdown-item';
-        item2.href = 'http://www.bing.com';
-        item2.textContent = 'Bing';
-
-        const item3 = document.createElement('a');
-        item3.className = 'dropdown-item';
-        item3.href = 'http://www.yahoo.com';
-        item3.textContent = 'Yahoo';
-
-        dropdownMenu.appendChild(item1);
-        dropdownMenu.appendChild(item2);
-        dropdownMenu.appendChild(item3);
-
-        dropdown.appendChild(dropdownButton);
-        dropdown.appendChild(dropdownMenu);
-        dropdownContainer.appendChild(dropdown);
-
-        const editButton = document.createElement('button');
-        editButton.type = 'button';
-        editButton.className = 'btn-action btn-edit';
-        editButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar';
-        editButton.addEventListener('click', function () {
+    // ========== EVENT LISTENERS PARA TARJETAS ==========
+    function attachCardEvents(card) {
+        // Botón Editar
+        const editBtn = card.querySelector('.btn-edit');
+        editBtn.addEventListener('click', function () {
             populateForm(card);
         });
 
-        const statusButton = document.createElement('button');
-        statusButton.type = 'button';
-        statusButton.className = 'btn-action btn-status';
-        statusButton.addEventListener('click', function () {
+        // Botón Estado
+        const statusBtn = card.querySelector('.btn-status');
+        statusBtn.addEventListener('click', function () {
             let nextState;
             switch (card.dataset.estado) {
                 case 'pendiente':
@@ -222,50 +180,27 @@
             }
         });
 
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.className = 'btn-action btn-delete';
-        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
-        deleteButton.addEventListener('click', function () {
+        // Botón Eliminar
+        const deleteBtn = card.querySelector('.btn-delete');
+        deleteBtn.addEventListener('click', function () {
             if (editingCard === card) {
                 clearForm();
             }
             card.remove();
             ensureEmptyState();
         });
-
-        actions.appendChild(dropdownContainer);
-        actions.appendChild(editButton);
-        actions.appendChild(statusButton);
-        actions.appendChild(deleteButton);
-
-        card.appendChild(header);
-        card.appendChild(course);
-        card.appendChild(description);
-        card.appendChild(actions);
-
-        applyStatus(card, normalizedEstado);
-
-        return card;
     }
 
-    function updateCard(card, data) {
-        card.dataset.nombre = data.nombre;
-        card.dataset.curso = data.curso;
-        card.dataset.descripcion = data.descripcion;
-        card.dataset.fecha = data.fecha;
-
-        card.querySelector('.project-title').textContent = data.nombre;
-        card.querySelector('.project-date').textContent = formatDate(data.fecha);
-        const courseText = card.querySelector('.course-text');
-        if (courseText) {
-            courseText.textContent = data.curso;
-        }
-        card.querySelector('.project-description').textContent = data.descripcion;
-
-        applyStatus(card, card.dataset.estado || 'pendiente');
+    // ========== INICIALIZAR TARJETAS EXISTENTES ==========
+    function initializeExistingCards() {
+        const existingCards = list.querySelectorAll('.project-card');
+        existingCards.forEach(card => {
+            attachCardEvents(card);
+            applyStatus(card, card.dataset.estado || 'pendiente');
+        });
     }
 
+    // ========== SUBMIT FORM ==========
     form.addEventListener('submit', function (event) {
         event.preventDefault();
 
@@ -282,15 +217,10 @@
         }
 
         if (editingCard) {
+            // Actualizar tarjeta existente
             updateCard(editingCard, data);
         } else {
-            const emptyEl = document.getElementById('emptyState');
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-
-            console.log(data)
-
+            // Crear nueva tarjeta
             fetch('../Proyectos/InsertarProyecto', {
                 method: 'POST',
                 headers: {
@@ -298,44 +228,28 @@
                 },
                 body: JSON.stringify(data)
             })
+            .then(response => response.json())
+            .then(resultado => {
+                if (resultado.ok) {
+                    Swal.fire({
+                        title: "Éxito!",
+                        text: `${resultado.mensaje}`,
+                        icon: "success",
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#297ea6'
+                    });
+                } else {
+                    Swal.fire({
+                        title: "Advertencia",
+                        text: `${resultado.mensaje}`,
+                        icon: "warning",
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#297ea6'
+                    });
+                }
+            });
 
-                .then(response => response.json())
-
-                .then(resultado => {
-
-                    if (resultado.ok) {
-
-                        Swal.fire({
-                            title: "Éxito!",
-                            text: `${resultado.mensaje}`,
-                            icon: "success",
-                            confirmButtonText: 'Entendido',
-                            confirmButtonColor: '#297ea6'
-                        });
-
-
-
-
-                    } else {
-
-                        Swal.fire({
-                            title: "Advertencia",
-                            text: `${resultado.mensaje}`,
-                            icon: "warning",
-                            confirmButtonText: 'Entendido',
-                            confirmButtonColor: '#297ea6'
-
-                        });
-
-                    }
-
-
-
-
-
-                })
-
-            const card = createCardElements(data);
+            const card = createCardFromTemplate(data);
             list.appendChild(card);
         }
 
@@ -343,5 +257,7 @@
         ensureEmptyState();
     });
 
+    // ========== INICIALIZACIÓN ==========
+    initializeExistingCards();
     ensureEmptyState();
 });

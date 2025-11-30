@@ -31,12 +31,24 @@ namespace AulaVirtualDAL
 
                                 if (exito == 1)
                                 {
+                                    // Lectura robusta de columnas para soportar SP nuevo y viejo
+                                    string nombreCompleto;
+                                    try { nombreCompleto = reader["NombreCompleto"].ToString(); }
+                                    catch { nombreCompleto = reader["NombreUsuario"].ToString(); }
+
+                                    int rolId;
+                                    try { rolId = Convert.ToInt32(reader["RolId"]); }
+                                    catch { rolId = Convert.ToInt32(reader["id_rol"]); }
+
+                                    int usuarioId;
+                                    try { usuarioId = Convert.ToInt32(reader["UsuarioId"]); }
+                                    catch { usuarioId = Convert.ToInt32(reader["id_usuario"]); }
+
                                     Usuario usuario = new Usuario
                                     {
-                                        NombreUsuario = reader["NombreCompleto"].ToString(),
-                                        Rol = reader["id_rol"].ToString(),
-                                        IdUsuario = Convert.ToInt32(reader["id_usuario"])
-
+                                        NombreCompleto = nombreCompleto,
+                                        RolId = rolId,
+                                        Id = usuarioId
                                     };
 
                                     respuesta.Ok = true;

@@ -128,5 +128,45 @@ namespace AulaVirtualDAL
 
 
 
+        public Respuesta<bool> EliminarProyecto(int Id, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("spEliminarProyecto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@pIdProyecto", SqlDbType.Int) { Value = Id });
+
+                        int FilasAfectadas = command.ExecuteNonQuery();
+
+                        if (FilasAfectadas > 0 || FilasAfectadas == -1)
+                        {
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Proyecto eliminado exitosamente";
+                            respuesta.ValorRetorno = true;
+                        }
+                        else
+                        {
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "No se pudo eliminar el proyecto";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
     }
 }

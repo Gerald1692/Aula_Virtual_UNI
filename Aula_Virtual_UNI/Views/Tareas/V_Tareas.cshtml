@@ -60,16 +60,38 @@
             <h1>Crear Tareas</h1>
             <form class="task-form" action="#" method="post">
                 <label class="form-field">
-                    <span>Nombre de la tarea</span>
-                    <input type="text" name="nombre" required />
+                    <span>Título de la tarea</span>
+                    <input type="text" name="titulo" required />
                 </label>
                 <label class="form-field">
-                    <span>Curso</span>
-                    <input type="text" name="curso" required />
+                    <span>Proyecto</span>
+                    <select name="proyecto" id="proyectoSelect" required>
+                        <option value="">Seleccione un proyecto</option>
+                        @if (ViewBag.ListaProyectos != null)
+                        {
+                            @foreach (var proyecto in ViewBag.ListaProyectos)
+                            {
+                                <option value="@proyecto.id_proyecto" data-nombre="@proyecto.nombre">@proyecto.nombre</option>
+                            }
+                        }
+                    </select>
                 </label>
                 <label class="form-field">
-                    <span>Fecha de entrega</span>
-                    <input type="date" name="fecha" required />
+                    <span>Estudiante Asignado</span>
+                    <select name="estudiante" id="estudianteSelect" required>
+                        <option value="">Seleccione un estudiante</option>
+                        @if (ViewBag.ListaEstudiantes != null)
+                        {
+                            @foreach (var estudiante in ViewBag.ListaEstudiantes)
+                            {
+                                <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
+                            }
+                        }
+                    </select>
+                </label>
+                <label class="form-field">
+                    <span>Fecha límite</span>
+                    <input type="date" name="fechaLimite" required />
                 </label>
                 <label class="form-field">
                     <span>Descripción de la tarea</span>
@@ -100,16 +122,20 @@
                     {
 
                         <article class="task-card"
-                                 data-nombre="@Tarea.Nombre"
-                                 data-curso="@Tarea.Curso"
+                                 data-id="@Tarea.Id"
+                                 data-titulo="@Tarea.Titulo"
+                                 data-proyectoid="@Tarea.ProyectoId"
+                                 data-proyecto="@Tarea.Curso"
+                                 data-estudianteid="@Tarea.EstudianteAsignadoId"
+                                 data-nombreasignado="@Tarea.NombreAsignado"
                                  data-descripcion="@Tarea.Descripcion"
-                                 data-fecha="@Tarea.FechaEntrega.ToString("yyyy-MM-dd")"
+                                 data-fechalimite="@Tarea.FechaLimite.ToString("yyyy-MM-dd")"
                                  data-estado="@Tarea.Estado">
                             <div class="task-card-header">
-                                <h3 class="task-title">@Tarea.Nombre</h3>
+                                <h3 class="task-title">@Tarea.Titulo</h3>
                                 <div class="task-meta">
                                     <span class="task-status is-pending">@Tarea.Estado</span>
-                                    <span class="task-date">@Tarea.FechaEntrega.ToString("dd MMM yyyy")</span>
+                                    <span class="task-date">@Tarea.FechaLimite.ToString("dd MMM yyyy")</span>
                                 </div>
                             </div>
 
@@ -117,27 +143,20 @@
                                 <i class="fa-solid fa-graduation-cap"></i>
                                 <span class="course-text">@Tarea.Curso</span>
                             </p>
+                            
+                            @if (!string.IsNullOrEmpty(Tarea.NombreAsignado))
+                            {
+                                <p class="task-assigned">
+                                    <i class="fa-solid fa-user"></i>
+                                    <span class="assigned-text">@Tarea.NombreAsignado</span>
+                                </p>
+                            }
 
                             <p class="task-description">@Tarea.Descripcion</p>
 
+                                        <!-- El CRUD DE LA TAREA  -->
                             <div class="task-card-actions">
-
-                                <!--Este es el dropdown-->
-                                <div class="container">
-                                    <div class="dropdown">
-                                        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown1" data-toggle="dropdown">
-                                            Asignar Alumnos
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <a class="dropdown-item" href="http://www.google.com">Google</a>
-                                            <a class="dropdown-item" href="http://www.bing.com">Bing</a>
-                                            <a class="dropdown-item" href="http://www.yahoo.com">Yahoo</a>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
+                                
                                 <button type="button" class="btn-action btn-edit">
                                     <i class="fa-solid fa-pen-to-square"></i> Editar
                                 </button>
@@ -151,8 +170,6 @@
                                 </button>
                             </div>
                         </article>
-
-                    
                     }
                 }
 
@@ -163,10 +180,67 @@
         </section>
     </main>
 
+    <!-- Template para tarjetas de tareas -->
+    <template id="task-card-template">
+        <article class="task-card" 
+                 data-id=""
+                 data-titulo="" 
+                 data-proyectoid="" 
+                 data-proyecto="" 
+                 data-estudianteid=""
+                 data-nombreasignado=""
+                 data-descripcion="" 
+                 data-fechalimite="" 
+                 data-estado="pendiente">
+            <div class="task-card-header">
+                <h3 class="task-title"></h3>
+                <div class="task-meta">
+                    <span class="task-status is-pending"></span>
+                    <span class="task-date"></span>
+                </div>
+            </div>
+
+            <p class="task-course">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span class="course-text"></span>
+            </p>
+            
+            <p class="task-assigned">
+                <i class="fa-solid fa-user"></i>
+                <span class="assigned-text"></span>
+            </p>
+
+            <p class="task-description"></p>
+
+            <div class="task-card-actions">
+                <!-- Dropdown -->
+                <div class="container">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">
+                            Asignar Alumnos
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="http://www.google.com">Google</a>
+                            <a class="dropdown-item" href="http://www.bing.com">Bing</a>
+                            <a class="dropdown-item" href="http://www.yahoo.com">Yahoo</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-action btn-edit">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                </button>
+
+                <button type="button" class="btn-action btn-status">
+                    <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                </button>
+
+                <button type="button" class="btn-action btn-delete">
+                    <i class="fa-solid fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </article>
+    </template>
 
 </body>
 </html>
-
-
-
-

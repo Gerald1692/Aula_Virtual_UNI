@@ -175,6 +175,7 @@ body {
     }
 
 .task-form input,
+.task-form select,
 .task-form textarea {
     width: 100%;
     min-height: 40px;
