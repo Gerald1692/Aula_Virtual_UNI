@@ -121,9 +121,18 @@
         const card = clone.querySelector('.project-card');
 
         // Establecer data attributes
+<<<<<<< HEAD
         if (data.id_proyecto) {
             card.dataset.id = data.id_proyecto;
         }
+=======
+<<<<<<< HEAD
+        if (data.id_proyecto) {
+            card.dataset.id = data.id_proyecto;
+        }
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -190,6 +199,10 @@
         // Botón Eliminar
         const deleteBtn = card.querySelector('.btn-delete');
         deleteBtn.addEventListener('click', function () {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
             const projectId = card.dataset.id;
             
             if (!projectId) {
@@ -200,6 +213,13 @@
                 card.remove();
                 ensureEmptyState();
                 return;
+<<<<<<< HEAD
+=======
+=======
+            if (editingCard === card) {
+                clearForm();
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
             }
 
             // Confirmar eliminación
@@ -305,6 +325,10 @@
             .then(response => response.json())
             .then(resultado => {
                 if (resultado.ok) {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                     // Agregar el ID del proyecto devuelto por el servidor
                     let proyectoId = null;
                     if (resultado.valorRetorno && resultado.valorRetorno.id_proyecto) {
@@ -336,6 +360,11 @@
                         });
                     }
                     
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                     Swal.fire({
                         title: "Éxito!",
                         text: `${resultado.mensaje}`,
@@ -343,10 +372,19 @@
                         confirmButtonText: 'Entendido',
                         confirmButtonColor: '#297ea6'
                     });
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                     
                     const card = createCardFromTemplate(data);
                     list.appendChild(card);
                     ensureEmptyState();
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                 } else {
                     Swal.fire({
                         title: "Advertencia",
@@ -357,6 +395,15 @@
                     });
                 }
             });
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+
+            const card = createCardFromTemplate(data);
+            list.appendChild(card);
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
         }
 
         clearForm();

@@ -18,6 +18,10 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                     // Consulta directa con el rol correcto: id_rol = 1 es Estudiante
                     string query = @"
                         SELECT 
@@ -31,6 +35,15 @@ namespace AulaVirtualDAL
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
+<<<<<<< HEAD
+=======
+=======
+                    using (SqlCommand command = new SqlCommand("ObtenerEstudiantes", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
+>>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
