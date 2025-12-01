@@ -141,10 +141,7 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
+
                     using (SqlCommand command = new SqlCommand("EliminarProyecto", connection))
                     {
                         command.CommandType = CommandType.StoredProcedure;
@@ -169,9 +166,7 @@ namespace AulaVirtualDAL
                                 respuesta.Ok = false;
                                 respuesta.Mensaje = "No se recibió respuesta del procedimiento almacenado";
                             }
-<<<<<<< HEAD
-=======
-=======
+
                     using (SqlCommand command = new SqlCommand("spEliminarProyecto", connection))
                     {
                         command.CommandType = CommandType.StoredProcedure;
@@ -190,8 +185,7 @@ namespace AulaVirtualDAL
                         {
                             respuesta.Ok = false;
                             respuesta.Mensaje = "No se pudo eliminar el proyecto";
->>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
->>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
+
                         }
                     }
                 }
@@ -204,10 +198,7 @@ namespace AulaVirtualDAL
 
             return respuesta;
         }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
+
 
         public Respuesta<bool> AsignarEstudianteProyecto(int ProyectoId, int EstudianteId, string Conexion)
         {
@@ -280,10 +271,6 @@ namespace AulaVirtualDAL
 
             return respuesta;
         }
-<<<<<<< HEAD
-=======
-=======
->>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
->>>>>>> e11b38268a0ef68b2d9ae13e5c352ba303e8ce26
+
     }
 }
