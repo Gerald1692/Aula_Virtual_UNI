@@ -53,15 +53,15 @@ namespace Aula_Virtual_UNI.Controllers
             {
                 var u = respuesta.ValorRetorno;
 
-                HttpContext.Session.SetString("Nombre", u.NombreUsuario ?? "");
-                HttpContext.Session.SetString("Rol", u.Rol ?? "");
+                HttpContext.Session.SetString("Nombre", u.NombreCompleto ?? "");
+                HttpContext.Session.SetString("Rol", u.RolId.ToString() ?? "");
 
                 var ConfigCookie = new CookieOptions()
                 {
                     Expires = DateTime.Now.AddMinutes(30),
                 };
 
-                Response.Cookies.Append("IdUsuario", Convert.ToString(u.IdUsuario), ConfigCookie);
+                Response.Cookies.Append("IdUsuario", Convert.ToString(u.Id), ConfigCookie);
             }
 
             return respuesta;
