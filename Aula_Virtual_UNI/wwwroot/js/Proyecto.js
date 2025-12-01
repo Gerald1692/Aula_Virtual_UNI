@@ -121,9 +121,12 @@
         const card = clone.querySelector('.project-card');
 
         // Establecer data attributes
+<<<<<<< HEAD
         if (data.id_proyecto) {
             card.dataset.id = data.id_proyecto;
         }
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
@@ -190,6 +193,7 @@
         // Botón Eliminar
         const deleteBtn = card.querySelector('.btn-delete');
         deleteBtn.addEventListener('click', function () {
+<<<<<<< HEAD
             const projectId = card.dataset.id;
             
             if (!projectId) {
@@ -200,6 +204,10 @@
                 card.remove();
                 ensureEmptyState();
                 return;
+=======
+            if (editingCard === card) {
+                clearForm();
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
             }
 
             // Confirmar eliminación
@@ -305,6 +313,7 @@
             .then(response => response.json())
             .then(resultado => {
                 if (resultado.ok) {
+<<<<<<< HEAD
                     // Agregar el ID del proyecto devuelto por el servidor
                     let proyectoId = null;
                     if (resultado.valorRetorno && resultado.valorRetorno.id_proyecto) {
@@ -336,6 +345,8 @@
                         });
                     }
                     
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
                     Swal.fire({
                         title: "Éxito!",
                         text: `${resultado.mensaje}`,
@@ -343,10 +354,13 @@
                         confirmButtonText: 'Entendido',
                         confirmButtonColor: '#297ea6'
                     });
+<<<<<<< HEAD
                     
                     const card = createCardFromTemplate(data);
                     list.appendChild(card);
                     ensureEmptyState();
+=======
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
                 } else {
                     Swal.fire({
                         title: "Advertencia",
@@ -357,6 +371,12 @@
                     });
                 }
             });
+<<<<<<< HEAD
+=======
+
+            const card = createCardFromTemplate(data);
+            list.appendChild(card);
+>>>>>>> f84fcff83333d92b5c4b91115f1c0fe0cbab39f6
         }
 
         clearForm();
