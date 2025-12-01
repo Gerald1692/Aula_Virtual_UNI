@@ -10,6 +10,7 @@ builder.Services.AddSingleton<Aula_Virtual_UNI.Data.ISqlConnectionFactory, Aula_
 builder.Services.AddScoped<Login>();
 builder.Services.AddScoped<ProyectosDAL>();
 builder.Services.AddScoped<TareasDAL>();
+builder.Services.AddScoped<UsuariosDAL>();
 
 // 🔹 Habilitar sesiones
 builder.Services.AddDistributedMemoryCache();
