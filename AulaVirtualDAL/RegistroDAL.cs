@@ -40,9 +40,9 @@ namespace AulaVirtualDAL
                                 {
                                     Usuario usuario = new Usuario
                                     {
-                                        IdUsuario = Convert.ToInt32(reader["id_usuario"]),
-                                        NombreUsuario = reader["NombreCompleto"].ToString(),
-                                        Rol = reader["id_rol"].ToString()
+                                        Id = Convert.ToInt32(reader["id_usuario"]),
+                                        NombreCompleto = reader["NombreCompleto"].ToString(),
+                                        RolId = Convert.ToInt32(reader["id_rol"])
                                     };
 
                                     respuesta.Ok = true;

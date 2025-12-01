@@ -1,99 +1,333 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('.task-form');
-    const list = document.getElementById('taskList');
-    const submitLabel = form?.querySelector('.btn-create span.label-text');
+    const taskList = document.getElementById('taskList');
+    const emptyState = document.getElementById('emptyState');
+    const template = document.getElementById('task-card-template');
     let editingCard = null;
+    let submitLabel = null;
 
-    const STATUS_LABELS = {
-        pendiente: 'Pendiente',
-        terminada: 'Terminada',
-        en_progreso: 'En Progreso'
-    };
-
-    if (!form || !list) {
-        return;
-    }
-
+    // Referencias a los inputs del formulario
     const inputs = {
-        nombre: form.elements['nombre'],
-        curso: form.elements['curso'],
+        titulo: form.elements['titulo'],
+        proyecto: form.elements['proyecto'],
+        estudiante: form.elements['estudiante'],
         descripcion: form.elements['descripcion'],
-        fecha: form.elements['fecha']
+        fechaLimite: form.elements['fechaLimite']
     };
 
-    function formatDate(value) {
-        const date = new Date(value + 'T00:00:00');
-        if (isNaN(date)) {
-            return value;
-        }
-        return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Buscar el botón de submit para cambiar su texto
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitLabel = submitBtn.querySelector('.label-text');
     }
 
-    function normalizeStatus(value) {
-        if (value === 'terminada') return 'terminada';
-        if (value === 'en_progreso') return 'en_progreso';
-        return 'pendiente';
-    }
+    // Inicializar eventos para las tarjetas existentes
+    document.querySelectorAll('.task-card').forEach(card => {
+        attachCardEvents(card);
+    });
 
-    function updateStatusBadge(badge, estado) {
-        const normalized = normalizeStatus(estado);
-        badge.textContent = STATUS_LABELS[normalized] || '';
-        badge.classList.remove('is-done', 'is-pending', 'is-progress');
-        if (normalized === 'terminada') {
-            badge.classList.add('is-done');
-        } else if (normalized === 'en_progreso') {
-            badge.classList.add('is-progress');
+    // Manejar el envío del formulario (Crear / Editar)
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const proyectoSelect = inputs.proyecto;
+        const selectedOption = proyectoSelect.options[proyectoSelect.selectedIndex];
+        const proyectoNombre = selectedOption.getAttribute('data-nombre') || selectedOption.text;
+
+        const estudianteSelect = inputs.estudiante;
+        const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+        const estudianteNombre = selectedEstudianteOption.text;
+
+        // Datos para enviar al servidor (solo propiedades de la entidad)
+        const data = {
+            titulo: inputs.titulo.value.trim(),
+            proyectoId: parseInt(inputs.proyecto.value),
+            estudianteAsignadoId: parseInt(inputs.estudiante.value),
+            descripcion: inputs.descripcion.value.trim(),
+            fechaLimite: inputs.fechaLimite.value,
+            estado: editingCard ? editingCard.dataset.estado : 'pendiente'
+        };
+
+        // Datos adicionales para la UI
+        const uiData = {
+            ...data,
+            proyectoNombre: proyectoNombre,
+            nombreAsignado: estudianteNombre
+        };
+
+        if (form.dataset.editing === 'true' && editingCard) {
+            // Modo Edición: Actualizar tarjeta existente
+
+            // Agregar ID de la tarea al objeto data
+            const updateData = {
+                ...data,
+                id: parseInt(editingCard.dataset.id)
+            };
+
+            // Llamada AJAX para actualizar en BD
+            fetch('../Tareas/ActualizarTarea', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            })
+                .then(response => response.json())
+                .then(resultado => {
+                    if (resultado.ok) {
+                        updateCard(editingCard, uiData);
+                        clearForm();
+                        Swal.fire({
+                            title: "¡Actualizado!",
+                            text: resultado.mensaje,
+                            icon: "success"
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: resultado.mensaje,
+                            icon: "error"
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        text: "Ocurrió un error al actualizar la tarea",
+                        icon: "error"
+                    });
+                });
+
         } else {
-            badge.classList.add('is-pending');
+            // Modo Creación: Crear nueva tarjeta
+
+            // Enviar al servidor
+            fetch('../Tareas/InsertarTarea', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(resultado => {
+                    if (resultado.ok) {
+                        // Actualizar el ID en los datos de la UI con el ID devuelto por el servidor
+                        if (resultado.valorRetorno && resultado.valorRetorno.id) {
+                            uiData.id = resultado.valorRetorno.id;
+                        }
+
+                        createCardFromTemplate(uiData);
+                        ensureEmptyState();
+                        clearForm();
+
+                        Swal.fire({
+                            title: "¡Éxito!",
+                            text: resultado.mensaje,
+                            icon: "success"
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: resultado.mensaje,
+                            icon: "error"
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        title: "Error",
+                        text: "Ocurrió un error al procesar la solicitud",
+                        icon: "error"
+                    });
+                });
         }
-        return normalized;
+    });
+
+    // Función para crear una tarjeta usando el template HTML
+    function createCardFromTemplate(data) {
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.task-card');
+
+        // Llenar datos visuales
+        fillCardData(card, data);
+
+        // Configurar atributos de datos para persistencia en DOM
+        setCardAttributes(card, data);
+
+        // Adjuntar eventos
+        attachCardEvents(card);
+
+        // Insertar en la lista
+        taskList.appendChild(card);
     }
 
-    function updateStatusButton(button, estado) {
-        const normalized = normalizeStatus(estado);
-        button.innerHTML = `<i class="fa-solid fa-flag"></i> Estado: ${STATUS_LABELS[normalized]}`;
-        button.classList.toggle('is-reset', normalized === 'terminada');
+    // Función para actualizar una tarjeta existente
+    function updateCard(card, data) {
+        fillCardData(card, data);
+        setCardAttributes(card, data);
     }
 
-    function applyStatus(card, estado) {
-        const normalized = normalizeStatus(estado);
-        card.dataset.estado = normalized;
+    // Función auxiliar para llenar los elementos visuales de la tarjeta
+    function fillCardData(card, data) {
+        card.querySelector('.task-title').textContent = data.titulo;
+        card.querySelector('.task-status').textContent = data.estado;
 
-        const badge = card.querySelector('.task-status');
-        if (badge) {
-            updateStatusBadge(badge, normalized);
+        // Formatear fecha para mostrar
+        const fechaObj = new Date(data.fechaLimite);
+        // Ajuste de zona horaria simple para visualización
+        const fechaUser = new Date(fechaObj.getTime() + fechaObj.getTimezoneOffset() * 60000);
+
+        const opciones = { day: 'numeric', month: 'short', year: 'numeric' };
+        card.querySelector('.task-date').textContent = fechaUser.toLocaleDateString('es-ES', opciones);
+
+        card.querySelector('.course-text').textContent = data.proyectoNombre;
+        card.querySelector('.task-description').textContent = data.descripcion;
+
+        // Mostrar estudiante asignado si existe
+        const assignedText = card.querySelector('.assigned-text');
+        if (assignedText) {
+            assignedText.textContent = data.nombreAsignado;
+            // Mostrar/ocultar contenedor si es necesario
+            const assignedContainer = card.querySelector('.task-assigned');
+            if (assignedContainer) {
+                assignedContainer.style.display = data.nombreAsignado ? 'block' : 'none';
+            }
         }
 
-        const toggleButton = card.querySelector('.btn-status');
-        if (toggleButton) {
-            updateStatusButton(toggleButton, normalized);
-        }
+        applyStatus(card, data.estado);
     }
 
-    function ensureEmptyState() {
-        if (list.children.length === 0 && !document.getElementById('emptyState')) {
-            const message = document.createElement('p');
-            message.className = 'empty-state';
-            message.id = 'emptyState';
-            message.textContent = 'Aún no hay tareas creadas.';
-            list.appendChild(message);
-        }
+    // Función auxiliar para establecer atributos data-*
+    function setCardAttributes(card, data) {
+        card.dataset.titulo = data.titulo;
+        card.dataset.proyectoid = data.proyectoId;
+        card.dataset.proyecto = data.proyectoNombre;
+        card.dataset.estudianteid = data.estudianteAsignadoId;
+        card.dataset.nombreasignado = data.nombreAsignado;
+        card.dataset.descripcion = data.descripcion;
+        card.dataset.fechalimite = data.fechaLimite;
+        card.dataset.estado = data.estado;
+        // No sobrescribimos el ID si ya existe
+        if (data.id) card.dataset.id = data.id;
     }
 
-    function clearForm() {
-        form.reset();
-        editingCard = null;
-        form.removeAttribute('data-editing');
-        if (submitLabel) {
-            submitLabel.textContent = 'Crear';
-        }
+    // Función para adjuntar eventos a los botones de una tarjeta
+    function attachCardEvents(card) {
+        const btnEdit = card.querySelector('.btn-edit');
+        const btnStatus = card.querySelector('.btn-status');
+        const btnDelete = card.querySelector('.btn-delete');
+
+        // Editar
+        btnEdit.addEventListener('click', () => {
+            populateForm(card);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Cambiar Estado
+        btnStatus.addEventListener('click', () => {
+            const currentStatus = card.dataset.estado;
+            let newStatus;
+
+            if (currentStatus === 'pendiente') newStatus = 'en progreso';
+            else if (currentStatus === 'en progreso') newStatus = 'completada';
+            else newStatus = 'pendiente';
+
+            // Llamada AJAX para actualizar estado
+            const taskId = parseInt(card.dataset.id);
+
+            fetch('../Tareas/ActualizarEstadoTarea', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: taskId, estado: newStatus })
+            })
+                .then(response => response.json())
+                .then(resultado => {
+                    if (resultado.ok) {
+                        card.dataset.estado = newStatus;
+                        card.querySelector('.task-status').textContent = newStatus;
+                        applyStatus(card, newStatus);
+
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: "top-end",
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true,
+                        });
+                        Toast.fire({
+                            icon: "success",
+                            title: "Estado actualizado"
+                        });
+                    } else {
+                        Swal.fire({
+                            title: "Error",
+                            text: "No se pudo actualizar el estado",
+                            icon: "error"
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        // Eliminar
+        btnDelete.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de eliminar esta tarea?')) {
+
+                const taskId = parseInt(card.dataset.id);
+
+                fetch('../Tareas/EliminarTarea', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskId) // Enviamos solo el entero
+                })
+                    .then(response => response.json())
+                    .then(resultado => {
+                        if (resultado.ok) {
+                            card.remove();
+                            ensureEmptyState();
+
+                            Swal.fire({
+                                title: "¡Eliminado!",
+                                text: "La tarea ha sido eliminada.",
+                                icon: "success"
+                            });
+                        } else {
+                            Swal.fire({
+                                title: "Error",
+                                text: resultado.mensaje,
+                                icon: "error"
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            title: "Error",
+                            text: "Ocurrió un error al eliminar la tarea",
+                            icon: "error"
+                        });
+                    });
+            }
+        });
     }
 
+    // Función para llenar el formulario con datos de una tarjeta (Modo Edición)
     function populateForm(card) {
-        inputs.nombre.value = card.dataset.nombre || '';
-        inputs.curso.value = card.dataset.curso || '';
+        inputs.titulo.value = card.dataset.titulo || '';
+        inputs.proyecto.value = card.dataset.proyectoid || '';
+        inputs.estudiante.value = card.dataset.estudianteid || '';
         inputs.descripcion.value = card.dataset.descripcion || '';
-        inputs.fecha.value = card.dataset.fecha || '';
+        inputs.fechaLimite.value = card.dataset.fechalimite || '';
+
         editingCard = card;
         form.dataset.editing = 'true';
         if (submitLabel) {
@@ -101,247 +335,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function createCardElements(data) {
-        const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
+    // Función para aplicar estilos según el estado
+    function applyStatus(card, status) {
+        const statusBadge = card.querySelector('.task-status');
+        const btnStatus = card.querySelector('.btn-status');
 
-        const card = document.createElement('article');
-        card.className = 'task-card';
-        card.dataset.nombre = data.nombre;
-        card.dataset.curso = data.curso;
-        card.dataset.descripcion = data.descripcion;
-        card.dataset.fecha = data.fecha;
-        card.dataset.estado = normalizedEstado;
-
-        const header = document.createElement('div');
-        header.className = 'task-card-header';
-
-        const title = document.createElement('h3');
-        title.className = 'task-title';
-        title.textContent = data.nombre;
-
-        const meta = document.createElement('div');
-        meta.className = 'task-meta';
-
-        const statusBadge = document.createElement('span');
+        // Resetear clases
         statusBadge.className = 'task-status';
 
-        const date = document.createElement('span');
-        date.className = 'task-date';
-        date.textContent = formatDate(data.fecha);
-
-        meta.appendChild(statusBadge);
-        meta.appendChild(date);
-
-        header.appendChild(title);
-        header.appendChild(meta);
-
-        const course = document.createElement('p');
-        course.className = 'task-course';
-        const courseIcon = document.createElement('i');
-        courseIcon.className = 'fa-solid fa-graduation-cap';
-        course.appendChild(courseIcon);
-        const courseText = document.createElement('span');
-        courseText.className = 'course-text';
-        courseText.textContent = data.curso;
-        course.appendChild(courseText);
-
-        const description = document.createElement('p');
-        description.className = 'task-description';
-        description.textContent = data.descripcion;
-
-        const actions = document.createElement('div');
-        actions.className = 'task-card-actions';
-
-        // Create dropdown container
-        const dropdownContainer = document.createElement('div');
-        dropdownContainer.className = 'container';
-
-        const dropdown = document.createElement('div');
-        dropdown.className = 'dropdown';
-
-        const dropdownButton = document.createElement('button');
-        dropdownButton.className = 'btn btn-primary dropdown-toggle';
-        dropdownButton.type = 'button';
-        dropdownButton.id = 'dropdown' + Date.now();
-        dropdownButton.setAttribute('data-toggle', 'dropdown');
-        dropdownButton.textContent = 'Asignar Alumnos';
-
-        const dropdownMenu = document.createElement('div');
-        dropdownMenu.className = 'dropdown-menu';
-
-        // Add sample dropdown items (you can modify this to load actual students)
-        const item1 = document.createElement('a');
-        item1.className = 'dropdown-item';
-        item1.href = 'http://www.google.com';
-        item1.textContent = 'Google';
-
-        const item2 = document.createElement('a');
-        item2.className = 'dropdown-item';
-        item2.href = 'http://www.bing.com';
-        item2.textContent = 'Bing';
-
-        const item3 = document.createElement('a');
-        item3.className = 'dropdown-item';
-        item3.href = 'http://www.yahoo.com';
-        item3.textContent = 'Yahoo';
-
-        dropdownMenu.appendChild(item1);
-        dropdownMenu.appendChild(item2);
-        dropdownMenu.appendChild(item3);
-
-        dropdown.appendChild(dropdownButton);
-        dropdown.appendChild(dropdownMenu);
-        dropdownContainer.appendChild(dropdown);
-
-        const editButton = document.createElement('button');
-        editButton.type = 'button';
-        editButton.className = 'btn-action btn-edit';
-        editButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar';
-        editButton.addEventListener('click', function () {
-            populateForm(card);
-        });
-
-        const statusButton = document.createElement('button');
-        statusButton.type = 'button';
-        statusButton.className = 'btn-action btn-status';
-        statusButton.addEventListener('click', function () {
-            let nextState;
-            switch (card.dataset.estado) {
-                case 'pendiente':
-                    nextState = 'en_progreso';
-                    break;
-                case 'en_progreso':
-                    nextState = 'terminada';
-                    break;
-                default:
-                    nextState = 'pendiente';
-            }
-            applyStatus(card, nextState);
-            if (editingCard === card) {
-                editingCard.dataset.estado = nextState;
-            }
-        });
-
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.className = 'btn-action btn-delete';
-        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
-        deleteButton.addEventListener('click', function () {
-            if (editingCard === card) {
-                clearForm();
-            }
-            card.remove();
-            ensureEmptyState();
-        });
-
-        actions.appendChild(dropdownContainer);
-        actions.appendChild(editButton);
-        actions.appendChild(statusButton);
-        actions.appendChild(deleteButton);
-
-        card.appendChild(header);
-        card.appendChild(course);
-        card.appendChild(description);
-        card.appendChild(actions);
-
-        applyStatus(card, normalizedEstado);
-
-        return card;
+        // Aplicar clases según estado
+        if (status === 'pendiente') {
+            statusBadge.classList.add('is-pending');
+            btnStatus.innerHTML = '<i class="fa-solid fa-flag"></i> Estado: Pendiente';
+        } else if (status === 'en progreso') {
+            statusBadge.classList.add('is-progress');
+            btnStatus.innerHTML = '<i class="fa-solid fa-spinner"></i> Estado: En Progreso';
+        } else if (status === 'completada') {
+            statusBadge.classList.add('is-completed');
+            btnStatus.innerHTML = '<i class="fa-solid fa-check"></i> Estado: Completada';
+        }
     }
 
-    function updateCard(card, data) {
-        card.dataset.nombre = data.nombre;
-        card.dataset.curso = data.curso;
-        card.dataset.descripcion = data.descripcion;
-        card.dataset.fecha = data.fecha;
-
-        card.querySelector('.task-title').textContent = data.nombre;
-        card.querySelector('.task-date').textContent = formatDate(data.fecha);
-        const courseText = card.querySelector('.course-text');
-        if (courseText) {
-            courseText.textContent = data.curso;
-        }
-        card.querySelector('.task-description').textContent = data.descripcion;
-
-        applyStatus(card, card.dataset.estado || 'pendiente');
-    }
-
-    form.addEventListener('submit', function (event) {
-        event.preventDefault();
-
-        const data = {
-            nombre: inputs.nombre.value.trim(),
-            curso: inputs.curso.value.trim(),
-            descripcion: inputs.descripcion.value.trim(),
-            fecha: inputs.fecha.value,
-            estado: editingCard ? editingCard.dataset.estado : 'pendiente'
-        };
-
-        if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
-            return;
-        }
-
-        if (editingCard) {
-            updateCard(editingCard, data);
+    // Función para manejar el estado vacío de la lista
+    function ensureEmptyState() {
+        const hasCards = taskList.querySelectorAll('.task-card').length > 0;
+        if (hasCards) {
+            emptyState.style.display = 'none';
         } else {
-            const emptyEl = document.getElementById('emptyState');
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-
-            console.log(data)
-
-            fetch('../Tareas/InsertarTarea', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-
-                .then(response => response.json())
-
-                .then(resultado => {
-
-                    if (resultado.ok) {
-
-                        Swal.fire({
-                            title: "Éxito!",
-                            text: `${resultado.mensaje}`,
-                            icon: "success",
-                            confirmButtonText: 'Entendido',
-                            confirmButtonColor: '#297ea6'
-                        });
-
-
-
-
-                    } else {
-
-                        Swal.fire({
-                            title: "Advertencia",
-                            text: `${resultado.mensaje}`,
-                            icon: "warning",
-                            confirmButtonText: 'Entendido',
-                            confirmButtonColor: '#297ea6'
-
-                        });
-
-                    }
-
-
-
-
-
-                })
-
-            const card = createCardElements(data);
-            list.appendChild(card);
+            emptyState.style.display = 'block';
         }
+    }
 
-        clearForm();
-        ensureEmptyState();
-    });
+    // Función para limpiar el formulario
+    function clearForm() {
+        form.reset();
+        delete form.dataset.editing;
+        editingCard = null;
+        if (submitLabel) {
+            submitLabel.textContent = 'Crear';
+        }
+    }
 
+    // Verificar estado inicial
     ensureEmptyState();
 });

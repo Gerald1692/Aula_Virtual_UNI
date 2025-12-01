@@ -35,25 +35,28 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = Proyecto.curso });
                         command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = Proyecto.estado });
 
-
                         int FilasAfectadas = command.ExecuteNonQuery();
-
 
                         if (FilasAfectadas > 0)
                         {
-
                             respuesta.Ok = true;
                             respuesta.Mensaje = $"El proyecto ha sido agregado de manera exitosa";
-
-
+                            
+                            // Obtener el ID del proyecto insertado usando SCOPE_IDENTITY()
+                            using (SqlCommand getIdCommand = new SqlCommand("SELECT SCOPE_IDENTITY()", connection))
+                            {
+                                object result = getIdCommand.ExecuteScalar();
+                                if (result != null)
+                                {
+                                    Proyecto.id_proyecto = Convert.ToInt32(result);
+                                    respuesta.ValorRetorno = Proyecto;
+                                }
+                            }
                         }
                         else
                         {
-
                             respuesta.Ok = false;
                             respuesta.Mensaje = "Ha ocurrido un error a la hora de agregar el proyecto";
-
-
                         }
 
 
@@ -128,5 +131,123 @@ namespace AulaVirtualDAL
 
 
 
+        public Respuesta<bool> EliminarProyecto(int Id, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("EliminarProyecto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = Id });
+
+                        // El procedimiento devuelve un SELECT, necesitamos leerlo
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                // Leer Exito y Mensaje del resultado
+                                int exito = reader.GetInt32(0);
+                                string mensaje = reader.GetString(1);
+
+                                respuesta.Ok = exito == 1;
+                                respuesta.Mensaje = mensaje;
+                                respuesta.ValorRetorno = exito == 1;
+                            }
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se recibió respuesta del procedimiento almacenado";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> AsignarEstudianteProyecto(int ProyectoId, int EstudianteId, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("AsignarEstudianteProyecto", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@ProyectoId", SqlDbType.Int) { Value = ProyectoId });
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows && reader.Read())
+                            {
+                                int exito = 0;
+                                string mensaje = "Error desconocido al asignar el estudiante.";
+
+                                try
+                                {
+                                    if (reader.GetOrdinal("Exito") >= 0)
+                                        exito = reader.GetInt32(reader.GetOrdinal("Exito"));
+                                    if (reader.GetOrdinal("Mensaje") >= 0)
+                                        mensaje = reader.GetString(reader.GetOrdinal("Mensaje"));
+                                }
+                                catch (IndexOutOfRangeException)
+                                {
+                                    if (reader.FieldCount >= 2)
+                                    {
+                                        exito = reader.GetInt32(0);
+                                        mensaje = reader.GetString(1);
+                                    }
+                                    else
+                                    {
+                                        respuesta.Ok = false;
+                                        respuesta.Mensaje = "El procedimiento almacenado no devolvió las columnas esperadas (Exito, Mensaje).";
+                                        return respuesta;
+                                    }
+                                }
+
+                                respuesta.Ok = exito == 1;
+                                respuesta.Mensaje = mensaje;
+                                respuesta.ValorRetorno = exito == 1;
+                            }
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se recibió respuesta del procedimiento almacenado 'AsignarEstudianteProyecto'.";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (SqlException sqlEx)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = $"Error de base de datos al asignar el estudiante: {sqlEx.Message}";
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = $"Error inesperado al asignar el estudiante: {ex.Message}";
+            }
+
+            return respuesta;
+        }
     }
 }
