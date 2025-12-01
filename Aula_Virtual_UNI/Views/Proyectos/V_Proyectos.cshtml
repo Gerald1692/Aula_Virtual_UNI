@@ -64,6 +64,19 @@
                     <input type="text" name="nombre" required />
                 </label>
                 <label class="form-field">
+                    <span>Estudiante Asignado</span>
+                    <select name="estudiante" id="estudianteSelect" required>
+                        <option value="">Seleccione un estudiante</option>
+                        @if (ViewBag.ListaEstudiantes != null)
+                        {
+                            @foreach (var estudiante in ViewBag.ListaEstudiantes)
+                            {
+                                <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
+                            }
+                        }
+                    </select>
+                </label>
+                <label class="form-field">
                     <span>Curso</span>
                     <input type="text" name="curso" required />
                 </label>
@@ -96,18 +109,21 @@
 
                 @foreach (var Proyecto in ListaProyectos)
                 {
+                    string fechaFormateada = Proyecto.fecha.ToString("yyyy-MM-dd");
+                    string estadoNormalizado = Proyecto.estado ?? "pendiente";
 
                     <article class="project-card"
-                             data-nombre="TRABAJO"
-                             data-curso="PROGRA"
-                             data-descripcion="programa"
-                             data-fecha="2025-11-11"
-                             data-estado="pendiente">
+                             data-id="@Proyecto.id_proyecto"
+                             data-nombre="@Proyecto.nombre"
+                             data-curso="@Proyecto.curso"
+                             data-descripcion="@Proyecto.descripcion"
+                             data-fecha="@fechaFormateada"
+                             data-estado="@estadoNormalizado">
                         <div class="project-card-header">
                             <h3 class="project-title">@Proyecto.nombre</h3>
                             <div class="task-meta">
-                                <span class="task-status is-pending">@Proyecto.estado</span>
-                                <span class="project-date">@Proyecto.fecha</span>
+                                <span class="task-status is-pending">@estadoNormalizado</span>
+                                <span class="project-date">@fechaFormateada</span>
                             </div>
                         </div>
 
@@ -120,28 +136,13 @@
 
                         <div class="project-card-actions">
 
-                            <!--Este es el dropdown-->
-                            <div class="container">
-                                <div class="dropdown">
-                                    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdown1" data-toggle="dropdown">
-                                        Asignar Alumnos
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item" href="http://www.google.com">Google</a>
-                                        <a class="dropdown-item" href="http://www.bing.com">Bing</a>
-                                        <a class="dropdown-item" href="http://www.yahoo.com">Yahoo</a>
-                                    </div>
-                                </div>
-                            </div>
-
-
-
+                            <!-- El CRUD DE PROYECTOS     -->
                             <button type="button" class="btn-action btn-edit">
                                 <i class="fa-solid fa-pen-to-square"></i> Editar
                             </button>
 
                             <button type="button" class="btn-action btn-status">
-                                <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                                <i class="fa-solid fa-flag"></i> Estado: @estadoNormalizado
                             </button>
 
                             <button type="button" class="btn-action btn-delete">
@@ -153,50 +154,46 @@
                     
                 }
 
-
-
-                <article class="project-card"
-                         data-nombre="TRABAJO"
-                         data-curso="PROGRA"
-                         data-descripcion="programa"
-                         data-fecha="2025-11-11"
-                         data-estado="pendiente">
-                    <div class="project-card-header">
-                        <h3 class="project-title">TRABAJO</h3>
-                        <div class="task-meta">
-                            <span class="task-status is-pending">Pendiente</span>
-                            <span class="project-date">11 nov 2025</span>
-                        </div>
-                    </div>
-
-                    <p class="project-course">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                        <span class="course-text">PROGRA</span>
-                    </p>
-
-                    <p class="project-description">programa</p>
-
-                    <div class="project-card-actions">
-                        <button type="button" class="btn-action btn-edit">
-                            <i class="fa-solid fa-pen-to-square"></i> Editar
-                        </button>
-
-                        <button type="button" class="btn-action btn-status">
-                            <i class="fa-solid fa-flag"></i> Estado: Pendiente
-                        </button>
-
-                        <button type="button" class="btn-action btn-delete">
-                            <i class="fa-solid fa-trash"></i> Eliminar
-                        </button>
-                    </div>
-                </article>
-
-
                 <p class="empty-state" id="emptyState">Aún no hay proyectos creados.</p>
             </div>
         </section>
     </main>
 
+    <!-- Template para tarjetas de proyectos -->
+    <template id="project-card-template">
+        <article class="project-card" data-nombre="" data-curso="" data-descripcion="" data-fecha="" data-estado="pendiente">
+            <div class="project-card-header">
+                <h3 class="project-title"></h3>
+                <div class="task-meta">
+                    <span class="task-status is-pending"></span>
+                    <span class="project-date"></span>
+                </div>
+            </div>
+
+            <p class="project-course">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span class="course-text"></span>
+            </p>
+
+            <p class="project-description"></p>
+
+            <div class="project-card-actions">
+                
+                <!-- El CRUD DE PROYECTOS  -->
+                <button type="button" class="btn-action btn-edit">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                </button>
+
+                <button type="button" class="btn-action btn-status">
+                    <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                </button>
+
+                <button type="button" class="btn-action btn-delete">
+                    <i class="fa-solid fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </article>
+    </template>
 
 </body>
 </html>
