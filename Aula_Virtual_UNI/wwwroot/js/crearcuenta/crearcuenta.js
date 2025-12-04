@@ -8,10 +8,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Campos del formulario
     const nombre = document.getElementById('nombre');
-    const apellido = document.getElementById('apellido');
-    const matricula = document.getElementById('matricula');
-    const carrera = document.getElementById('carrera');
-    const email = document.getElementById('email');
+    const apellido1 = document.getElementById('apellido1');
+    const apellido2 = document.getElementById('apellido2');
+    const cedula = document.getElementById('cedula');
+    const telefono = document.getElementById('telefono');
+    const correo = document.getElementById('correo');
+    const sede = document.getElementById('sede');
     const password = document.getElementById('password');
     const confirmPassword = document.getElementById('confirmPassword');
 
@@ -33,36 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
         this.querySelector('i').classList.toggle('fa-eye-slash');
     });
 
-    // Verificar fortaleza de contraseña
-    password.addEventListener('input', function () {
-        const strengthIndicator = document.getElementById('passwordStrength');
-        const value = this.value;
-        let strength = 0;
-        let message = '';
-        let color = '';
-
-        if (value.length >= 6) strength++;
-        if (value.length >= 10) strength++;
-        if (/[a-z]/.test(value) && /[A-Z]/.test(value)) strength++;
-        if (/\d/.test(value)) strength++;
-        if (/[^a-zA-Z0-9]/.test(value)) strength++;
-
-        if (value.length === 0) {
-            message = '';
-        } else if (strength <= 2) {
-            message = 'Contraseña débil';
-            color = 'text-danger';
-        } else if (strength <= 3) {
-            message = 'Contraseña media';
-            color = 'text-warning';
-        } else {
-            message = 'Contraseña fuerte';
-            color = 'text-success';
-        }
-
-        strengthIndicator.textContent = message;
-        strengthIndicator.className = 'form-text ' + color;
-    });
 
     // Verificar que las contraseñas coincidan
     confirmPassword.addEventListener('input', function () {
@@ -90,36 +62,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Verificar matrícula existente (debounce)
-    let matriculaTimeout;
-    matricula.addEventListener('input', function () {
-        clearTimeout(matriculaTimeout);
-        const feedback = document.getElementById('matriculaFeedback');
+    // Verificar cédula existente (debounce)
+    let cedulaTimeout;
+    cedula.addEventListener('input', function () {
+        clearTimeout(cedulaTimeout);
+        const feedback = document.getElementById('cedulaFeedback');
         const value = this.value.trim();
 
-        if (value.length < 3) {
+        if (value.length < 5) {
             feedback.textContent = '';
             return;
         }
 
-        matriculaTimeout = setTimeout(() => {
-            fetch('/CrearCuenta/VerificarMatricula', {
+        cedulaTimeout = setTimeout(() => {
+            fetch('/CrearCuenta/VerificarCedula', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: 'matricula=' + encodeURIComponent(value)
+                body: 'cedula=' + encodeURIComponent(value)
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.existe) {
-                        feedback.textContent = '⚠️ Esta matrícula ya está registrada';
+                        feedback.textContent = '⚠️ Esta cédula ya está registrada';
                         feedback.className = 'form-text text-danger';
-                        matricula.setCustomValidity('Matrícula ya registrada');
+                        cedula.setCustomValidity('Cédula ya registrada');
                     } else {
-                        feedback.textContent = '✓ Matrícula disponible';
+                        feedback.textContent = '✓ Cédula disponible';
                         feedback.className = 'form-text text-success';
-                        matricula.setCustomValidity('');
+                        cedula.setCustomValidity('');
                     }
                 })
                 .catch(error => {
@@ -128,18 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         }, 500);
     });
-
-    // Mostrar mensaje de alerta
-    function showAlert(message, type) {
-        alertMessage.textContent = message;
-        alertMessage.className = 'alert alert-' + type;
-        alertMessage.classList.remove('d-none');
-
-        // Auto-ocultar después de 5 segundos
-        setTimeout(() => {
-            alertMessage.classList.add('d-none');
-        }, 5000);
-    }
 
     // Manejar envío del formulario
     form.addEventListener('submit', function (e) {
@@ -154,7 +114,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Verificar que las contraseñas coincidan
         if (password.value !== confirmPassword.value) {
-            showAlert('Las contraseñas no coinciden', 'danger');
+            Swal.fire({
+                title: "Error",
+                text: "Las contraseñas no coinciden",
+                icon: "error"
+            });
             return;
         }
 
@@ -166,10 +130,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // Preparar datos
         const formData = new URLSearchParams();
         formData.append('nombre', nombre.value.trim());
-        formData.append('apellido', apellido.value.trim());
-        formData.append('matricula', matricula.value.trim());
-        formData.append('carrera', carrera.value.trim());
-        formData.append('email', email.value.trim());
+        formData.append('apellido1', apellido1.value.trim());
+        formData.append('apellido2', apellido2.value.trim());
+        formData.append('cedula', cedula.value.trim());
+        formData.append('telefono', telefono.value.trim());
+        formData.append('correo', correo.value.trim());
+        formData.append('sede', sede.value.trim());
         formData.append('password', password.value);
 
         // Enviar datos
@@ -183,14 +149,24 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    showAlert('✓ ' + data.mensaje + ' Redirigiendo...', 'success');
-
-                    // Redirigir al menú principal después de 2 segundos
-                    setTimeout(() => {
-                        window.location.href = '/Menu/Menu';
-                    }, 2000);
+                    Swal.fire({
+                        title: "¡Registro Exitoso!",
+                        text: data.mensaje || "Te has registrado correctamente",
+                        icon: "success",
+                        confirmButtonText: 'Ir al Login',
+                        confirmButtonColor: '#297ea6'
+                    }).then(() => {
+                        // Redirigir al login
+                        window.location.href = '/Login/Login';
+                    });
                 } else {
-                    showAlert('⚠️ ' + data.mensaje, 'danger');
+                    Swal.fire({
+                        title: "Error al Registrar",
+                        text: data.mensaje || "No se pudo completar el registro",
+                        icon: "error",
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#297ea6'
+                    });
                     btnRegistrar.disabled = false;
                     btnText.classList.remove('d-none');
                     btnSpinner.classList.add('d-none');
@@ -198,7 +174,13 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error('Error:', error);
-                showAlert('⚠️ Error al procesar el registro. Por favor, intente nuevamente.', 'danger');
+                Swal.fire({
+                    title: "Error",
+                    text: "Error al procesar el registro. Por favor, intente nuevamente.",
+                    icon: "error",
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#297ea6'
+                });
                 btnRegistrar.disabled = false;
                 btnText.classList.remove('d-none');
                 btnSpinner.classList.add('d-none');
@@ -206,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Validación en tiempo real para todos los campos
-    const inputs = [nombre, apellido, matricula, carrera, email, password, confirmPassword];
+    const inputs = [nombre, apellido1, apellido2, cedula, telefono, correo, sede, password, confirmPassword];
     inputs.forEach(input => {
         input.addEventListener('blur', function () {
             if (this.checkValidity()) {

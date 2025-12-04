@@ -78,5 +78,52 @@ namespace AulaVirtualDAL
 
             return respuesta;
         }
+
+        public Respuesta<string> RecuperarContrasena(string Usuario, string Conexion)
+        {
+            Respuesta<string> respuesta = new Respuesta<string>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Consulta directa para buscar la contraseña por correo o nombre de usuario
+                    string query = @"
+                        SELECT contrasena 
+                        FROM usuarios 
+                        WHERE correo = @Usuario OR nombre = @Usuario";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@Usuario", SqlDbType.NVarChar, 100) { Value = Usuario });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                string contrasena = reader["contrasena"].ToString();
+                                respuesta.Ok = true;
+                                respuesta.Mensaje = "Contraseña recuperada exitosamente.";
+                                respuesta.ValorRetorno = contrasena;
+                            }
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se encontró un usuario con ese correo o nombre de usuario.";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
     }
 }

@@ -6,8 +6,8 @@ namespace AulaVirtualDAL
 {
     public class RegistroDAL
     {
-        public Respuesta<Usuario> RegistrarUsuario(string nombre, string apellido, string matricula, 
-            string carrera, string email, string contrasena, string conexion)
+        public Respuesta<Usuario> RegistrarUsuario(string nombre, string apellido1, string apellido2, 
+            string cedula, string telefono, string correo, string sede, string contrasena, string conexion)
         {
             Respuesta<Usuario> respuesta = new Respuesta<Usuario>();
 
@@ -23,10 +23,12 @@ namespace AulaVirtualDAL
 
                         // Parámetros de entrada
                         command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 100) { Value = nombre });
-                        command.Parameters.Add(new SqlParameter("@pApellido", SqlDbType.NVarChar, 100) { Value = apellido });
-                        command.Parameters.Add(new SqlParameter("@pMatricula", SqlDbType.NVarChar, 50) { Value = matricula });
-                        command.Parameters.Add(new SqlParameter("@pCarrera", SqlDbType.NVarChar, 150) { Value = carrera });
-                        command.Parameters.Add(new SqlParameter("@pEmail", SqlDbType.NVarChar, 150) { Value = email });
+                        command.Parameters.Add(new SqlParameter("@pApellido1", SqlDbType.NVarChar, 100) { Value = apellido1 });
+                        command.Parameters.Add(new SqlParameter("@pApellido2", SqlDbType.NVarChar, 100) { Value = apellido2 });
+                        command.Parameters.Add(new SqlParameter("@pCedula", SqlDbType.NVarChar, 20) { Value = cedula });
+                        command.Parameters.Add(new SqlParameter("@pTelefono", SqlDbType.NVarChar, 20) { Value = telefono });
+                        command.Parameters.Add(new SqlParameter("@pCorreo", SqlDbType.NVarChar, 150) { Value = correo });
+                        command.Parameters.Add(new SqlParameter("@pSede", SqlDbType.NVarChar, 150) { Value = sede });
                         command.Parameters.Add(new SqlParameter("@pContrasena", SqlDbType.NVarChar, 50) { Value = contrasena });
 
                         using (SqlDataReader reader = command.ExecuteReader())
@@ -73,7 +75,7 @@ namespace AulaVirtualDAL
             return respuesta;
         }
 
-        public Respuesta<bool> VerificarMatriculaExistente(string matricula, string conexion)
+        public Respuesta<bool> VerificarCedulaExistente(string cedula, string conexion)
         {
             Respuesta<bool> respuesta = new Respuesta<bool>();
 
@@ -83,10 +85,10 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
-                    using (SqlCommand command = new SqlCommand("spVerificarMatricula", connection))
+                    using (SqlCommand command = new SqlCommand("spVerificarCedula", connection))
                     {
                         command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add(new SqlParameter("@pMatricula", SqlDbType.NVarChar, 50) { Value = matricula });
+                        command.Parameters.Add(new SqlParameter("@pCedula", SqlDbType.NVarChar, 20) { Value = cedula });
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {

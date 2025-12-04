@@ -11,6 +11,7 @@ builder.Services.AddScoped<Login>();
 builder.Services.AddScoped<ProyectosDAL>();
 builder.Services.AddScoped<TareasDAL>();
 builder.Services.AddScoped<UsuariosDAL>();
+builder.Services.AddScoped<RegistroDAL>();
 
 // 🔹 Habilitar sesiones
 builder.Services.AddDistributedMemoryCache();
