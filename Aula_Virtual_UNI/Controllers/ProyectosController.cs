@@ -58,7 +58,7 @@ namespace Aula_Virtual_UNI.Controllers
         }
 
         [HttpPost]
-        public Respuesta<Proyectos> InsertarProyecto([FromBody] Proyectos Proyecto)
+        public Respuesta<Proyectos> InsertarProyecto([FromBody] dynamic proyectoData)
         {
 
             Respuesta<Proyectos> reply = new Respuesta<Proyectos>();
@@ -67,7 +67,39 @@ namespace Aula_Virtual_UNI.Controllers
             {
                 var conexion = _configuration.GetConnectionString("ConexionDB");
                 string IdUsuario = Request.Cookies["IdUsuario"];
+                
+                // Crear objeto Proyectos y mapear los datos
+                Proyectos Proyecto = new Proyectos();
+                Proyecto.nombre = proyectoData.nombre?.ToString();
+                Proyecto.descripcion = proyectoData.descripcion?.ToString();
+                Proyecto.curso = proyectoData.curso?.ToString();
+                Proyecto.estado = proyectoData.estado?.ToString() ?? "pendiente";
                 Proyecto.id_profesor = Convert.ToInt32(IdUsuario);
+                
+                // Mapear la fecha: si viene como "fecha", usarla para fecha_finalizacion y establecer fecha_inicio como hoy
+                if (proyectoData.fecha != null)
+                {
+                    if (DateTime.TryParse(proyectoData.fecha.ToString(), out DateTime fechaFinalizacion))
+                    {
+                        Proyecto.fecha_finalizacion = fechaFinalizacion;
+                        Proyecto.fecha_inicio = DateTime.Today;
+                    }
+                }
+                else if (proyectoData.fecha_finalizacion != null)
+                {
+                    if (DateTime.TryParse(proyectoData.fecha_finalizacion.ToString(), out DateTime fechaFinalizacion))
+                    {
+                        Proyecto.fecha_finalizacion = fechaFinalizacion;
+                    }
+                }
+                
+                if (proyectoData.fecha_inicio != null)
+                {
+                    if (DateTime.TryParse(proyectoData.fecha_inicio.ToString(), out DateTime fechaInicio))
+                    {
+                        Proyecto.fecha_inicio = fechaInicio;
+                    }
+                }
 
                 var respuesta = AccesoDAL.InsertarProyecto(Proyecto, conexion);
 

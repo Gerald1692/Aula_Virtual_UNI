@@ -27,13 +27,13 @@ namespace AulaVirtualDAL
                     {
                         command.CommandType = CommandType.StoredProcedure;
 
-                        command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 50) { Value = Proyecto.nombre });
-                        command.Parameters.Add(new SqlParameter("@pDescripcion", SqlDbType.NVarChar, 250) { Value = Proyecto.descripcion });
-                        command.Parameters.Add(new SqlParameter("@pFechainicio", SqlDbType.Date) { Value = Proyecto.fecha_inicio });
-                        command.Parameters.Add(new SqlParameter("@pFechaFinalizacion", SqlDbType.Date) { Value = Proyecto.fecha_finalizacion });
-                        command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = Proyecto.id_profesor });
-                        command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = Proyecto.curso });
-                        command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = Proyecto.estado });
+                        command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.nombre ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pDescripcion", SqlDbType.NVarChar, 250) { Value = (object)Proyecto.descripcion ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pFechainicio", SqlDbType.Date) { Value = (object)Proyecto.fecha_inicio ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pFechaFinalizacion", SqlDbType.Date) { Value = (object)Proyecto.fecha_finalizacion ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = (object)Proyecto.id_profesor ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.curso ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.estado ?? DBNull.Value });
 
                         int FilasAfectadas = command.ExecuteNonQuery();
 
@@ -46,7 +46,7 @@ namespace AulaVirtualDAL
                             using (SqlCommand getIdCommand = new SqlCommand("SELECT SCOPE_IDENTITY()", connection))
                             {
                                 object result = getIdCommand.ExecuteScalar();
-                                if (result != null)
+                                if (result != null && result != DBNull.Value)
                                 {
                                     Proyecto.id_proyecto = Convert.ToInt32(result);
                                     respuesta.ValorRetorno = Proyecto;
@@ -95,14 +95,14 @@ namespace AulaVirtualDAL
 
                                 Proyectos Proyecto = new Proyectos { 
                                 
-                                    id_proyecto = (int)reader["id_proyecto"],
-                                   nombre = (string)reader["nombre"],
-                                    descripcion = (string)reader["descripcion"],
-                                    fecha_inicio = (DateTime)reader["fecha_inicio"],
-                                    fecha_finalizacion = (DateTime)reader["fecha_finalizacion"],
-                                    id_profesor = (int)reader["id_profesor"],
-                                    curso = (string)reader["curso"],
-                                    estado= (string)reader["estado"]
+                                    id_proyecto = reader.IsDBNull("id_proyecto") ? 0 : reader.GetInt32("id_proyecto"),
+                                    nombre = reader.IsDBNull("nombre") ? null : reader.GetString("nombre"),
+                                    descripcion = reader.IsDBNull("descripcion") ? null : reader.GetString("descripcion"),
+                                    fecha_inicio = reader.IsDBNull("fecha_inicio") ? DateTime.MinValue : reader.GetDateTime("fecha_inicio"),
+                                    fecha_finalizacion = reader.IsDBNull("fecha_finalizacion") ? DateTime.MinValue : reader.GetDateTime("fecha_finalizacion"),
+                                    id_profesor = reader.IsDBNull("id_profesor") ? 0 : reader.GetInt32("id_profesor"),
+                                    curso = reader.IsDBNull("curso") ? null : reader.GetString("curso"),
+                                    estado = reader.IsDBNull("estado") ? null : reader.GetString("estado")
                                   
                                 };
 
