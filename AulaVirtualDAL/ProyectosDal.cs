@@ -178,6 +178,70 @@ namespace AulaVirtualDAL
             return respuesta;
         }
 
+        public Respuesta<List<Proyectos>> ObtenerProyectosPorEstudiante(int EstudianteId, string Conexion)
+        {
+            Respuesta<List<Proyectos>> respuesta = new Respuesta<List<Proyectos>>();
+            List<Proyectos> ListaProyectos = new List<Proyectos>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT DISTINCT
+                            p.id_proyecto,
+                            p.nombre,
+                            p.descripcion,
+                            p.fecha_inicio,
+                            p.fecha_finalizacion,
+                            p.id_profesor,
+                            p.curso,
+                            p.estado
+                        FROM dbo.proyectos p
+                        INNER JOIN dbo.proyecto_estudiante pe ON p.id_proyecto = pe.id_proyecto
+                        WHERE pe.id_estudiante = @EstudianteId
+                        ORDER BY p.fecha_finalizacion DESC";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Proyectos Proyecto = new Proyectos
+                                {
+                                    id_proyecto = reader.IsDBNull("id_proyecto") ? 0 : reader.GetInt32("id_proyecto"),
+                                    nombre = reader.IsDBNull("nombre") ? null : reader.GetString("nombre"),
+                                    descripcion = reader.IsDBNull("descripcion") ? null : reader.GetString("descripcion"),
+                                    fecha_inicio = reader.IsDBNull("fecha_inicio") ? DateTime.MinValue : reader.GetDateTime("fecha_inicio"),
+                                    fecha_finalizacion = reader.IsDBNull("fecha_finalizacion") ? DateTime.MinValue : reader.GetDateTime("fecha_finalizacion"),
+                                    id_profesor = reader.IsDBNull("id_profesor") ? 0 : reader.GetInt32("id_profesor"),
+                                    curso = reader.IsDBNull("curso") ? null : reader.GetString("curso"),
+                                    estado = reader.IsDBNull("estado") ? null : reader.GetString("estado")
+                                };
+
+                                ListaProyectos.Add(Proyecto);
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                            respuesta.ValorRetorno = ListaProyectos;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
         public Respuesta<bool> AsignarEstudianteProyecto(int ProyectoId, int EstudianteId, string Conexion)
         {
             Respuesta<bool> respuesta = new Respuesta<bool>();

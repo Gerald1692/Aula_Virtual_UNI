@@ -34,19 +34,26 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedOption = proyectoSelect.options[proyectoSelect.selectedIndex];
         const proyectoNombre = selectedOption.getAttribute('data-nombre') || selectedOption.text;
 
-        const estudianteSelect = inputs.estudiante;
-        const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
-        const estudianteNombre = selectedEstudianteOption.text;
+        let estudianteNombre = "";
+        if (inputs.estudiante) {
+            const estudianteSelect = inputs.estudiante;
+            const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+            estudianteNombre = selectedEstudianteOption ? selectedEstudianteOption.text : "";
+        }
 
         // Datos para enviar al servidor (solo propiedades de la entidad)
         const data = {
             titulo: inputs.titulo.value.trim(),
             proyectoId: parseInt(inputs.proyecto.value),
-            estudianteAsignadoId: parseInt(inputs.estudiante.value),
             descripcion: inputs.descripcion.value.trim(),
             fechaLimite: inputs.fechaLimite.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente'
         };
+
+        // Solo agregar estudianteAsignadoId si el campo existe (para profesores)
+        if (inputs.estudiante && inputs.estudiante.value) {
+            data.estudianteAsignadoId = parseInt(inputs.estudiante.value);
+        }
 
         // Datos adicionales para la UI
         const uiData = {

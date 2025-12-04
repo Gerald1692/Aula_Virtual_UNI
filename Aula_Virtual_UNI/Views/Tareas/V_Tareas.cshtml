@@ -2,6 +2,7 @@
     Layout = null;
 
     var ListaTareas = ViewBag.ListaTareas;
+    var rol = ViewBag.Rol as string;
 
 }
 
@@ -76,19 +77,22 @@
                         }
                     </select>
                 </label>
-                <label class="form-field">
-                    <span>Estudiante Asignado</span>
-                    <select name="estudiante" id="estudianteSelect" required>
-                        <option value="">Seleccione un estudiante</option>
-                        @if (ViewBag.ListaEstudiantes != null)
-                        {
-                            @foreach (var estudiante in ViewBag.ListaEstudiantes)
+                @if (string.IsNullOrEmpty(rol) || rol != "1")
+                {
+                    <label class="form-field">
+                        <span>Estudiante Asignado</span>
+                        <select name="estudiante" id="estudianteSelect" required>
+                            <option value="">Seleccione un estudiante</option>
+                            @if (ViewBag.ListaEstudiantes != null)
                             {
-                                <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
+                                @foreach (var estudiante in ViewBag.ListaEstudiantes)
+                                {
+                                    <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
+                                }
                             }
-                        }
-                    </select>
-                </label>
+                        </select>
+                    </label>
+                }
                 <label class="form-field">
                     <span>Fecha límite</span>
                     <input type="date" name="fechaLimite" required />
