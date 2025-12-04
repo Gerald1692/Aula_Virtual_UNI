@@ -43,8 +43,9 @@ Catálogo de roles del sistema.
 
 **Valores en la base de datos:**
 - `1` = Estudiante
-- `2` = Profesor  
-- `3` = Administrador
+- `2` = Profesor
+
+**⚠️ IMPORTANTE:** El stored procedure `ObtenerEstudiantes` en la BD filtra incorrectamente por `id_rol = 2` (Profesor). El código en `UsuariosDal.cs` usa una consulta directa con `id_rol = 1` (Estudiante) que es el valor correcto según la tabla `roles`.
 
 ---
 

@@ -278,45 +278,78 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Eliminar
         btnDelete.addEventListener('click', () => {
-            if (confirm('¿Estás seguro de eliminar esta tarea?')) {
+            const taskId = parseInt(card.dataset.id);
+            
+            if (!taskId) {
+                // Si no hay ID, solo eliminar del DOM (tarea nueva no guardada)
+                if (editingCard === card) {
+                    clearForm();
+                }
+                card.remove();
+                ensureEmptyState();
+                return;
+            }
 
-                const taskId = parseInt(card.dataset.id);
-
-                fetch('../Tareas/EliminarTarea', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(taskId) // Enviamos solo el entero
-                })
-                    .then(response => response.json())
+            // Confirmar eliminación
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamar al servidor para eliminar
+                    fetch('../Tareas/EliminarTarea', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskId)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(resultado => {
                         if (resultado.ok) {
+                            if (editingCard === card) {
+                                clearForm();
+                            }
                             card.remove();
                             ensureEmptyState();
-
+                            
                             Swal.fire({
-                                title: "¡Eliminado!",
-                                text: "La tarea ha sido eliminada.",
-                                icon: "success"
+                                title: '¡Eliminado!',
+                                text: resultado.mensaje || 'La tarea ha sido eliminada.',
+                                icon: 'success',
+                                confirmButtonColor: '#297ea6'
                             });
                         } else {
                             Swal.fire({
-                                title: "Error",
-                                text: resultado.mensaje,
-                                icon: "error"
+                                title: 'Error',
+                                text: resultado.mensaje || 'No se pudo eliminar la tarea.',
+                                icon: 'error',
+                                confirmButtonColor: '#297ea6'
                             });
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         Swal.fire({
-                            title: "Error",
-                            text: "Ocurrió un error al eliminar la tarea",
-                            icon: "error"
+                            title: 'Error',
+                            text: 'Ocurrió un error al eliminar la tarea: ' + error.message,
+                            icon: 'error',
+                            confirmButtonColor: '#297ea6'
                         });
                     });
-            }
+                }
+            });
         });
     }
 

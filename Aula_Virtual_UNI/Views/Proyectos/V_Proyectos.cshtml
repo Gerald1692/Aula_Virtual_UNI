@@ -109,7 +109,7 @@
 
                 @foreach (var Proyecto in ListaProyectos)
                 {
-                    string fechaFormateada = Proyecto.fecha.ToString("yyyy-MM-dd");
+                    string fechaFormateada = Proyecto.fecha_finalizacion.ToString("yyyy-MM-dd");
                     string estadoNormalizado = Proyecto.estado ?? "pendiente";
 
                     <article class="project-card"

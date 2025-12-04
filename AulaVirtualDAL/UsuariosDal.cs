@@ -18,7 +18,8 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
-                    // Consulta directa con el rol correcto: id_rol = 1 es Estudiante
+                    // Consulta directa con el rol correcto: id_rol = 1 es Estudiante (según tabla roles)
+                    // Nota: El stored procedure ObtenerEstudiantes filtra por id_rol = 2 (Profesor), lo cual es incorrecto
                     string query = @"
                         SELECT 
                             u.id_usuario AS Id,
@@ -26,7 +27,7 @@ namespace AulaVirtualDAL
                             u.cedula     AS Matricula,
                             u.correo     AS Email
                         FROM dbo.usuarios u
-                        WHERE u.id_rol = 1  -- 1 = Estudiante
+                        WHERE u.id_rol = 1  -- 1 = Estudiante (según tabla roles)
                         ORDER BY u.nombre, u.apellido1";
 
                     using (SqlCommand command = new SqlCommand(query, connection))

@@ -77,16 +77,12 @@ namespace AulaVirtualDAL
                     {
                         command.CommandType = CommandType.StoredProcedure;
 
-
-
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
                             {
-
                                 Tarea Tarea = new Tarea
                                 {
-
                                     Id = (int)reader["Id"],
                                     Titulo = (string)reader["Titulo"],
                                     Descripcion = (string)reader["Descripcion"],
@@ -96,20 +92,82 @@ namespace AulaVirtualDAL
                                     FechaLimite = (DateTime)reader["FechaLimite"],
                                     Estado = (string)reader["Estado"],
                                     NombreAsignado = reader["NombreAsignado"] != DBNull.Value ? (string)reader["NombreAsignado"] : null,
-                                    Curso = (string)reader["Curso"]
-
+                                    Curso = (string)reader["Curso"],
+                                    EstudiantesAsignados = new List<Usuario>()
                                 };
 
                                 ListaTareas.Add(Tarea);
+                            }
+                        }
 
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                // Actualizar NombreAsignado con todos los estudiantes si hay múltiples
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
 
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
 
+            return respuesta;
+        }
+
+        public Respuesta<List<Usuario>> ObtenerEstudiantesPorTarea(int TareaId, string Conexion)
+        {
+            Respuesta<List<Usuario>> respuesta = new Respuesta<List<Usuario>>();
+            List<Usuario> ListaEstudiantes = new List<Usuario>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ObtenerEstudiantesPorTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Usuario estudiante = new Usuario
+                                {
+                                    Id = (int)reader["Id"],
+                                    NombreCompleto = (string)reader["NombreCompleto"],
+                                    Cedula = reader["Matricula"] != DBNull.Value ? (string)reader["Matricula"] : string.Empty,
+                                    Email = reader["Email"] != DBNull.Value ? (string)reader["Email"] : string.Empty
+                                };
+
+                                ListaEstudiantes.Add(estudiante);
                             }
 
                             respuesta.Ok = true;
-                            respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
-                            respuesta.ValorRetorno = ListaTareas;
-
+                            respuesta.Mensaje = "Estudiantes obtenidos exitosamente";
+                            respuesta.ValorRetorno = ListaEstudiantes;
                         }
                     }
                 }
@@ -242,6 +300,107 @@ namespace AulaVirtualDAL
                             respuesta.Ok = false;
                             respuesta.Mensaje = "No se pudo actualizar el estado";
                         }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> AsignarEstudiantesATarea(int TareaId, List<int> EstudianteIds, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                if (EstudianteIds == null || EstudianteIds.Count == 0)
+                {
+                    respuesta.Ok = false;
+                    respuesta.Mensaje = "Debe seleccionar al menos un estudiante";
+                    return respuesta;
+                }
+
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    int asignacionesExitosas = 0;
+                    int asignacionesDuplicadas = 0;
+
+                    foreach (int estudianteId in EstudianteIds)
+                    {
+                        using (SqlCommand command = new SqlCommand("AsignarEstudianteATarea", connection))
+                        {
+                            command.CommandType = CommandType.StoredProcedure;
+                            command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+                            command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = estudianteId });
+
+                            try
+                            {
+                                command.ExecuteNonQuery();
+                                asignacionesExitosas++;
+                            }
+                            catch (SqlException sqlEx)
+                            {
+                                // Si es un error de duplicado, lo ignoramos
+                                if (sqlEx.Number == 2627 || sqlEx.Number == 2601) // Violación de clave única
+                                {
+                                    asignacionesDuplicadas++;
+                                }
+                                else
+                                {
+                                    throw;
+                                }
+                            }
+                        }
+                    }
+
+                    respuesta.Ok = true;
+                    if (asignacionesDuplicadas > 0)
+                    {
+                        respuesta.Mensaje = $"Se asignaron {asignacionesExitosas} estudiante(s). {asignacionesDuplicadas} ya estaban asignados.";
+                    }
+                    else
+                    {
+                        respuesta.Mensaje = $"Se asignaron {asignacionesExitosas} estudiante(s) exitosamente";
+                    }
+                    respuesta.ValorRetorno = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> EliminarAsignacionesEstudiantes(int TareaId, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("EliminarAsignacionesEstudiantes", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+
+                        command.ExecuteNonQuery();
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = "Asignaciones eliminadas exitosamente";
+                        respuesta.ValorRetorno = true;
                     }
                 }
             }

@@ -30,7 +30,7 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@pNombre", SqlDbType.NVarChar, 50) { Value = Proyecto.nombre });
                         command.Parameters.Add(new SqlParameter("@pDescripcion", SqlDbType.NVarChar, 250) { Value = Proyecto.descripcion });
                         command.Parameters.Add(new SqlParameter("@pFechainicio", SqlDbType.Date) { Value = Proyecto.fecha_inicio });
-                        command.Parameters.Add(new SqlParameter("@pFechaFinalizacion", SqlDbType.Date) { Value = Proyecto.fecha });
+                        command.Parameters.Add(new SqlParameter("@pFechaFinalizacion", SqlDbType.Date) { Value = Proyecto.fecha_finalizacion });
                         command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = Proyecto.id_profesor });
                         command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = Proyecto.curso });
                         command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = Proyecto.estado });
@@ -99,7 +99,7 @@ namespace AulaVirtualDAL
                                    nombre = (string)reader["nombre"],
                                     descripcion = (string)reader["descripcion"],
                                     fecha_inicio = (DateTime)reader["fecha_inicio"],
-                                    fecha = (DateTime)reader["fecha_finalizacion"],
+                                    fecha_finalizacion = (DateTime)reader["fecha_finalizacion"],
                                     id_profesor = (int)reader["id_profesor"],
                                     curso = (string)reader["curso"],
                                     estado= (string)reader["estado"]

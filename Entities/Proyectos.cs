@@ -13,7 +13,7 @@ namespace Entities
         public string? nombre { get; set; }
         public string? descripcion { get; set; }
         public DateTime fecha_inicio { get; set; }
-        public DateTime fecha { get; set; }
+        public DateTime fecha_finalizacion { get; set; }
         public int id_profesor { get; set; }
         public string? curso { get; set; }
         public string? estado { get; set; }

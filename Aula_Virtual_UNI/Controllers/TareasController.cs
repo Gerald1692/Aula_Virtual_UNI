@@ -196,5 +196,29 @@ namespace Aula_Virtual_UNI.Controllers
 
             return reply;
         }
+
+        [HttpGet]
+        public Respuesta<List<Usuario>> ObtenerEstudiantesTarea(int tareaId)
+        {
+            Respuesta<List<Usuario>> reply = new Respuesta<List<Usuario>>();
+
+            try
+            {
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                var respuesta = AccesoDAL.ObtenerEstudiantesPorTarea(tareaId, conexion);
+
+                if (respuesta != null)
+                {
+                    reply = respuesta;
+                }
+            }
+            catch (Exception ex)
+            {
+                reply.Ok = false;
+                reply.Mensaje = $"Error al obtener estudiantes: {ex.Message}";
+            }
+
+            return reply;
+        }
     }
 }

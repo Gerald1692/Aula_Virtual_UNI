@@ -14,5 +14,8 @@ namespace Entities
         // Propiedades adicionales para la vista
         public string? NombreAsignado { get; set; }
         public string? Curso { get; set; }
+        
+        // Lista de estudiantes asignados (múltiples)
+        public List<Usuario>? EstudiantesAsignados { get; set; }
     }
 }
