@@ -192,8 +192,13 @@ namespace AulaVirtualDAL
                             p.curso,
                             p.estado
                         FROM dbo.proyectos p
-                        INNER JOIN dbo.proyecto_estudiante pe ON p.id_proyecto = pe.id_proyecto
-                        WHERE pe.id_estudiante = @EstudianteId
+                        WHERE p.id_asignado = @EstudianteId
+                           OR EXISTS (
+                               SELECT 1 
+                               FROM dbo.proyecto_estudiante pe 
+                               WHERE pe.id_proyecto = p.id_proyecto 
+                                 AND pe.id_estudiante = @EstudianteId
+                           )
                         ORDER BY p.fecha_finalizacion DESC";
 
                     using (SqlCommand command = new SqlCommand(query, connection))

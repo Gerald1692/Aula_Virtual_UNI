@@ -29,9 +29,13 @@ namespace Aula_Virtual_UNI.Controllers
             var rol = HttpContext.Session.GetString("Rol");
             string idUsuarioStr = Request.Cookies["IdUsuario"];
 
+            // Normalizar el rol para comparación consistente
+            var rolNormalizado = NormalizarRol(rol);
+
             // Si es estudiante, solo mostrar las tareas que creó
-            if (!string.IsNullOrEmpty(rol) && rol == "1" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
+            if (rolNormalizado == "Estudiante" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
             {
+                // Obtener solo las tareas creadas por este estudiante
                 var tareasRespuesta = AccesoDAL.ObtenerTareasCreadasPorEstudiante(idUsuario, conexion);
                 if (tareasRespuesta != null && tareasRespuesta.Ok)
                 {
@@ -67,7 +71,7 @@ namespace Aula_Virtual_UNI.Controllers
             }
 
             // Obtener estudiantes para el dropdown (solo para profesores)
-            if (string.IsNullOrEmpty(rol) || rol != "1")
+            if (rolNormalizado != "Estudiante")
             {
                 var estudiantes = UsuariosDAL.ObtenerEstudiantes(conexion);
                 if (estudiantes != null && estudiantes.Ok)
@@ -82,6 +86,23 @@ namespace Aula_Virtual_UNI.Controllers
             return View();
         }
 
+        private static string NormalizarRol(string rol)
+        {
+            if (string.IsNullOrWhiteSpace(rol))
+                return string.Empty;
+
+            var rolLimpio = rol.Trim();
+            var rolLower = rolLimpio.ToLowerInvariant();
+
+            return rolLower switch
+            {
+                "1" or "estudiante" or "alumno" => "Estudiante",
+                "2" or "profesor" or "docente" => "Profesor",
+                "3" or "admin" or "administrador" => "Administrador",
+                _ => rolLimpio
+            };
+        }
+
         [HttpPost]
         public Respuesta<Tarea> InsertarTarea([FromBody] Tarea Tarea)
         {
@@ -94,8 +115,11 @@ namespace Aula_Virtual_UNI.Controllers
                 var rol = HttpContext.Session.GetString("Rol");
                 string idUsuarioStr = Request.Cookies["IdUsuario"];
 
+                // Normalizar el rol para comparación consistente
+                var rolNormalizado = NormalizarRol(rol);
+
                 // Si es estudiante, usar su propio ID como el que crea la tarea
-                if (!string.IsNullOrEmpty(rol) && rol == "1" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
+                if (rolNormalizado == "Estudiante" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
                 {
                     Tarea.EstudianteAsignadoId = idUsuario;
                 }

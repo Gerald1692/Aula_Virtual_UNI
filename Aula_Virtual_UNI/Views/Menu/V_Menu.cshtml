@@ -81,27 +81,31 @@
                     <h2 style="margin-bottom: 15px;">
                         <i class="fa-solid fa-layer-group"></i> Proyectos Asignados
                     </h2>
-                    <div class="projects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                    <div class="projects-list" style="display: flex; flex-direction: column; gap: 10px;">
                         @foreach (var proyecto in (List<Entities.Proyectos>)ViewBag.ListaProyectos)
                         {
-                            <div class="project-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f9f9f9;">
-                                <h3 style="margin-top: 0; color: #297ea6;">@proyecto.nombre</h3>
-                                <p style="color: #666; font-size: 0.9em;">@proyecto.descripcion</p>
-                                <div style="margin-top: 10px;">
-                                    <span style="background: #297ea6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
-                                        @(proyecto.estado ?? "pendiente")
-                                    </span>
+                            <div class="project-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff;">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div style="flex: 1;">
+                                        <h3 style="margin-top: 0; color: #297ea6;">@proyecto.nombre</h3>
+                                        <p style="color: #666; font-size: 0.9em;">@proyecto.descripcion</p>
+                                        <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
+                                            <span style="background: #297ea6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
+                                                @(proyecto.estado ?? "pendiente")
+                                            </span>
+                                            <span style="font-size: 0.85em; color: #888;">
+                                                <i class="fa-solid fa-calendar"></i> 
+                                                Límite: @proyecto.fecha_finalizacion.ToString("dd/MM/yyyy")
+                                            </span>
+                                            @if (!string.IsNullOrEmpty(proyecto.curso))
+                                            {
+                                                <span style="font-size: 0.85em; color: #888;">
+                                                    <i class="fa-solid fa-graduation-cap"></i> @proyecto.curso
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
-                                <p style="margin-top: 10px; font-size: 0.85em; color: #888;">
-                                    <i class="fa-solid fa-calendar"></i> 
-                                    Entrega: @proyecto.fecha_finalizacion.ToString("dd/MM/yyyy")
-                                </p>
-                                @if (!string.IsNullOrEmpty(proyecto.curso))
-                                {
-                                    <p style="font-size: 0.85em; color: #888;">
-                                        <i class="fa-solid fa-graduation-cap"></i> @proyecto.curso
-                                    </p>
-                                }
                             </div>
                         }
                     </div>
