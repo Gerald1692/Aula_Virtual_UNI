@@ -76,7 +76,7 @@
     function ensureEmptyState() {
         const emptyState = document.getElementById('emptyState');
         const hasCards = list.querySelector('.project-card');
-        
+
         if (!hasCards && !emptyState) {
             const message = document.createElement('p');
             message.className = 'empty-state';
@@ -97,7 +97,7 @@
         }
     }
 
-        function populateForm(card) {
+    function populateForm(card) {
         inputs.nombre.value = card.dataset.nombre || '';
         inputs.curso.value = card.dataset.curso || '';
         inputs.descripcion.value = card.dataset.descripcion || '';
@@ -115,7 +115,7 @@
     // ========== CREAR TARJETA DESDE TEMPLATE ==========
     function createCardFromTemplate(data) {
         const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
-        
+
         // Clonar el template
         const clone = template.content.cloneNode(true);
         const card = clone.querySelector('.project-card');
@@ -191,7 +191,7 @@
         const deleteBtn = card.querySelector('.btn-delete');
         deleteBtn.addEventListener('click', function () {
             const projectId = card.dataset.id;
-            
+
             if (!projectId) {
                 // Si no hay ID, solo eliminar del DOM (proyecto nuevo no guardado)
                 if (editingCard === card) {
@@ -222,44 +222,44 @@
                         },
                         body: JSON.stringify(parseInt(projectId))
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(resultado => {
-                        if (resultado.ok) {
-                            if (editingCard === card) {
-                                clearForm();
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
                             }
-                            card.remove();
-                            ensureEmptyState();
-                            
-                            Swal.fire({
-                                title: '¡Eliminado!',
-                                text: resultado.mensaje || 'El proyecto ha sido eliminado.',
-                                icon: 'success',
-                                confirmButtonColor: '#297ea6'
-                            });
-                        } else {
+                            return response.json();
+                        })
+                        .then(resultado => {
+                            if (resultado.ok) {
+                                if (editingCard === card) {
+                                    clearForm();
+                                }
+                                card.remove();
+                                ensureEmptyState();
+
+                                Swal.fire({
+                                    title: '¡Eliminado!',
+                                    text: resultado.mensaje || 'El proyecto ha sido eliminado.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#297ea6'
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: resultado.mensaje || 'No se pudo eliminar el proyecto.',
+                                    icon: 'error',
+                                    confirmButtonColor: '#297ea6'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
                             Swal.fire({
                                 title: 'Error',
-                                text: resultado.mensaje || 'No se pudo eliminar el proyecto.',
+                                text: 'Ocurrió un error al eliminar el proyecto: ' + error.message,
                                 icon: 'error',
                                 confirmButtonColor: '#297ea6'
                             });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Ocurrió un error al eliminar el proyecto: ' + error.message,
-                            icon: 'error',
-                            confirmButtonColor: '#297ea6'
                         });
-                    });
                 }
             });
         });
@@ -283,7 +283,8 @@
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
             fecha: inputs.fecha.value,
-            estado: editingCard ? editingCard.dataset.estado : 'pendiente'
+            estado: editingCard ? editingCard.dataset.estado : 'pendiente',
+            id_asignado: inputs.estudiante.value ? parseInt(inputs.estudiante.value) : null
         };
 
         if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
@@ -302,61 +303,61 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(resultado => {
-                if (resultado.ok) {
-                    // Agregar el ID del proyecto devuelto por el servidor
-                    let proyectoId = null;
-                    if (resultado.valorRetorno && resultado.valorRetorno.id_proyecto) {
-                        proyectoId = resultado.valorRetorno.id_proyecto;
-                        data.id_proyecto = proyectoId;
-                    }
-                    
-                    // Si se seleccionó un estudiante, asignarlo al proyecto
-                    const estudianteId = inputs.estudiante ? inputs.estudiante.value.trim() : null;
-                    if (estudianteId && estudianteId !== '' && proyectoId) {
-                        fetch('/Proyectos/AsignarEstudiante', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                proyectoId: parseInt(proyectoId),
-                                estudianteId: parseInt(estudianteId)
+                .then(response => response.json())
+                .then(resultado => {
+                    if (resultado.ok) {
+                        // Agregar el ID del proyecto devuelto por el servidor
+                        let proyectoId = null;
+                        if (resultado.valorRetorno && resultado.valorRetorno.id_proyecto) {
+                            proyectoId = resultado.valorRetorno.id_proyecto;
+                            data.id_proyecto = proyectoId;
+                        }
+
+                        // Si se seleccionó un estudiante, asignarlo al proyecto
+                        const estudianteId = inputs.estudiante ? inputs.estudiante.value.trim() : null;
+                        if (estudianteId && estudianteId !== '' && proyectoId) {
+                            fetch('/Proyectos/AsignarEstudiante', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    proyectoId: parseInt(proyectoId),
+                                    estudianteId: parseInt(estudianteId)
+                                })
                             })
-                        })
-                        .then(response => response.json())
-                        .then(asignacionResult => {
-                            if (!asignacionResult.ok) {
-                                console.warn('No se pudo asignar el estudiante:', asignacionResult.mensaje);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error al asignar estudiante:', error);
+                                .then(response => response.json())
+                                .then(asignacionResult => {
+                                    if (!asignacionResult.ok) {
+                                        console.warn('No se pudo asignar el estudiante:', asignacionResult.mensaje);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error al asignar estudiante:', error);
+                                });
+                        }
+
+                        Swal.fire({
+                            title: "Éxito!",
+                            text: `${resultado.mensaje}`,
+                            icon: "success",
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#297ea6'
+                        });
+
+                        const card = createCardFromTemplate(data);
+                        list.appendChild(card);
+                        ensureEmptyState();
+                    } else {
+                        Swal.fire({
+                            title: "Advertencia",
+                            text: `${resultado.mensaje}`,
+                            icon: "warning",
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#297ea6'
                         });
                     }
-                    
-                    Swal.fire({
-                        title: "Éxito!",
-                        text: `${resultado.mensaje}`,
-                        icon: "success",
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#297ea6'
-                    });
-                    
-                    const card = createCardFromTemplate(data);
-                    list.appendChild(card);
-                    ensureEmptyState();
-                } else {
-                    Swal.fire({
-                        title: "Advertencia",
-                        text: `${resultado.mensaje}`,
-                        icon: "warning",
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#297ea6'
-                    });
-                }
-            });
+                });
         }
 
         clearForm();

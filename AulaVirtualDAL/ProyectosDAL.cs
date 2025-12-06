@@ -34,24 +34,16 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = (object)Proyecto.id_profesor ?? DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.curso ?? DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.estado ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.Int) { Value = (object)Proyecto.id_asignado ?? DBNull.Value });
 
-                        int FilasAfectadas = command.ExecuteNonQuery();
+                        object result = command.ExecuteScalar();
 
-                        if (FilasAfectadas > 0)
+                        if (result != null && result != DBNull.Value)
                         {
                             respuesta.Ok = true;
                             respuesta.Mensaje = $"El proyecto ha sido agregado de manera exitosa";
-                            
-                            // Obtener el ID del proyecto insertado usando SCOPE_IDENTITY()
-                            using (SqlCommand getIdCommand = new SqlCommand("SELECT SCOPE_IDENTITY()", connection))
-                            {
-                                object result = getIdCommand.ExecuteScalar();
-                                if (result != null && result != DBNull.Value)
-                                {
-                                    Proyecto.id_proyecto = Convert.ToInt32(result);
-                                    respuesta.ValorRetorno = Proyecto;
-                                }
-                            }
+                            Proyecto.id_proyecto = Convert.ToInt32(result);
+                            respuesta.ValorRetorno = Proyecto;
                         }
                         else
                         {
