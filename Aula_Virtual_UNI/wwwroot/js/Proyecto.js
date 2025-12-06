@@ -129,12 +129,25 @@
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
         card.dataset.estado = normalizedEstado;
+        card.dataset.nombreasignado = data.nombreAsignado || "";
 
         // Llenar contenido
         card.querySelector('.project-title').textContent = data.nombre;
         card.querySelector('.project-date').textContent = formatDate(data.fecha);
         card.querySelector('.course-text').textContent = data.curso;
         card.querySelector('.project-description').textContent = data.descripcion;
+
+        // Mostrar estudiante asignado si existe
+        const assignedSection = card.querySelector('.project-assigned');
+        const assignedText = card.querySelector('.assigned-text');
+        if (assignedSection && assignedText) {
+            if (data.nombreAsignado && data.nombreAsignado.trim() !== '') {
+                assignedText.textContent = data.nombreAsignado;
+                assignedSection.style.display = 'block';
+            } else {
+                assignedSection.style.display = 'none';
+            }
+        }
 
         // Aplicar estado
         applyStatus(card, normalizedEstado);
@@ -150,11 +163,27 @@
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
+        if (data.nombreAsignado !== undefined) {
+            card.dataset.nombreasignado = data.nombreAsignado || "";
+        }
 
         card.querySelector('.project-title').textContent = data.nombre;
         card.querySelector('.project-date').textContent = formatDate(data.fecha);
         card.querySelector('.course-text').textContent = data.curso;
         card.querySelector('.project-description').textContent = data.descripcion;
+
+        // Actualizar estudiante asignado si existe
+        const assignedSection = card.querySelector('.project-assigned');
+        const assignedText = card.querySelector('.assigned-text');
+        if (assignedSection && assignedText) {
+            const nombreAsignado = data.nombreAsignado || card.dataset.nombreasignado || "";
+            if (nombreAsignado.trim() !== '') {
+                assignedText.textContent = nombreAsignado;
+                assignedSection.style.display = 'block';
+            } else {
+                assignedSection.style.display = 'none';
+            }
+        }
 
         applyStatus(card, card.dataset.estado || 'pendiente');
     }
@@ -278,13 +307,22 @@
     form.addEventListener('submit', function (event) {
         event.preventDefault();
 
+        // Obtener el nombre del estudiante del dropdown
+        let estudianteNombre = "";
+        if (inputs.estudiante && inputs.estudiante.value) {
+            const estudianteSelect = inputs.estudiante;
+            const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+            estudianteNombre = selectedEstudianteOption ? selectedEstudianteOption.text : "";
+        }
+
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
             fecha: inputs.fecha.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente',
-            id_asignado: inputs.estudiante.value ? parseInt(inputs.estudiante.value) : null
+            id_asignado: inputs.estudiante.value ? parseInt(inputs.estudiante.value) : null,
+            nombreAsignado: estudianteNombre
         };
 
         if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
@@ -345,6 +383,7 @@
                             confirmButtonColor: '#297ea6'
                         });
 
+                        // Crear la tarjeta con el nombre del estudiante
                         const card = createCardFromTemplate(data);
                         list.appendChild(card);
                         ensureEmptyState();

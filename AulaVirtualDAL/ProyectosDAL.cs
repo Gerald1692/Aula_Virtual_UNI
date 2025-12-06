@@ -94,7 +94,8 @@ namespace AulaVirtualDAL
                                     fecha_finalizacion = reader.IsDBNull("fecha_finalizacion") ? DateTime.MinValue : reader.GetDateTime("fecha_finalizacion"),
                                     id_profesor = reader.IsDBNull("id_profesor") ? 0 : reader.GetInt32("id_profesor"),
                                     curso = reader.IsDBNull("curso") ? null : reader.GetString("curso"),
-                                    estado = reader.IsDBNull("estado") ? null : reader.GetString("estado")
+                                    estado = reader.IsDBNull("estado") ? null : reader.GetString("estado"),
+                                    NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado")
                                   
                                 };
 

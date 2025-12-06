@@ -18,6 +18,7 @@ namespace Entities
         public string? curso { get; set; }
         public string? estado { get; set; }
         public int? id_asignado { get; set; }
+        public string? NombreAsignado { get; set; }
 
         
 

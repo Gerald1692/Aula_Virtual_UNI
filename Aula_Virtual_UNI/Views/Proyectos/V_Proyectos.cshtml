@@ -118,7 +118,8 @@
                              data-curso="@Proyecto.curso"
                              data-descripcion="@Proyecto.descripcion"
                              data-fecha="@fechaFormateada"
-                             data-estado="@estadoNormalizado">
+                             data-estado="@estadoNormalizado"
+                             data-nombreasignado="@(Proyecto.NombreAsignado ?? "")">
                         <div class="project-card-header">
                             <h3 class="project-title">@Proyecto.nombre</h3>
                             <div class="task-meta">
@@ -131,6 +132,14 @@
                             <i class="fa-solid fa-graduation-cap"></i>
                             <span class="course-text">@Proyecto.curso</span>
                         </p>
+                        
+                        @if (!string.IsNullOrEmpty(Proyecto.NombreAsignado))
+                        {
+                            <p class="project-assigned">
+                                <i class="fa-solid fa-user"></i>
+                                <span class="assigned-text">@Proyecto.NombreAsignado</span>
+                            </p>
+                        }
 
                         <p class="project-description">@Proyecto.descripcion</p>
 
@@ -161,7 +170,7 @@
 
     <!-- Template para tarjetas de proyectos -->
     <template id="project-card-template">
-        <article class="project-card" data-nombre="" data-curso="" data-descripcion="" data-fecha="" data-estado="pendiente">
+        <article class="project-card" data-nombre="" data-curso="" data-descripcion="" data-fecha="" data-estado="pendiente" data-nombreasignado="">
             <div class="project-card-header">
                 <h3 class="project-title"></h3>
                 <div class="task-meta">
@@ -173,6 +182,11 @@
             <p class="project-course">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span class="course-text"></span>
+            </p>
+
+            <p class="project-assigned" style="display: none;">
+                <i class="fa-solid fa-user"></i>
+                <span class="assigned-text"></span>
             </p>
 
             <p class="project-description"></p>
