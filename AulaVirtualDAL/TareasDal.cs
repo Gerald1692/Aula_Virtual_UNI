@@ -184,6 +184,22 @@ namespace AulaVirtualDAL
                         INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
                         LEFT JOIN dbo.usuarios u ON t.id_asignado = u.id_usuario
                         WHERE t.id_asignado = @EstudianteId
+                          -- Excluir tareas que tienen registros en tarea_estudiante (asignadas por profesor)
+                          AND NOT EXISTS (
+                              SELECT 1 
+                              FROM dbo.tarea_estudiante te 
+                              WHERE te.id_tarea = t.id_tarea
+                          )
+                          -- Excluir tareas donde el estudiante está en proyecto_estudiante (proyecto asignado por profesor)
+                          AND NOT EXISTS (
+                              SELECT 1 
+                              FROM dbo.proyecto_estudiante pe 
+                              WHERE pe.id_proyecto = t.id_proyecto 
+                                AND pe.id_estudiante = @EstudianteId
+                          )
+                          -- Solo mostrar tareas en proyectos asignados directamente al estudiante
+                          -- (no proyectos asignados por profesor mediante proyecto_estudiante)
+                          AND p.id_asignado = @EstudianteId
                         ORDER BY t.fecha_limite DESC";
 
                     using (SqlCommand command = new SqlCommand(query, connection))

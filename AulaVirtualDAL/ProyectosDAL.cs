@@ -311,5 +311,63 @@ namespace AulaVirtualDAL
 
             return respuesta;
         }
+
+        public Respuesta<List<int>> ObtenerEstudiantesDelProyecto(int ProyectoId, string Conexion)
+        {
+            Respuesta<List<int>> respuesta = new Respuesta<List<int>>();
+            List<int> ListaEstudiantes = new List<int>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT DISTINCT id_estudiante
+                        FROM (
+                            -- Estudiantes asignados directamente en proyectos.id_asignado
+                            SELECT p.id_asignado AS id_estudiante
+                            FROM dbo.proyectos p
+                            WHERE p.id_proyecto = @ProyectoId
+                              AND p.id_asignado IS NOT NULL
+                            
+                            UNION
+                            
+                            -- Estudiantes asignados a través de proyecto_estudiante
+                            SELECT pe.id_estudiante
+                            FROM dbo.proyecto_estudiante pe
+                            WHERE pe.id_proyecto = @ProyectoId
+                        ) AS estudiantes
+                        WHERE id_estudiante IS NOT NULL";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@ProyectoId", SqlDbType.Int) { Value = ProyectoId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                if (!reader.IsDBNull("id_estudiante"))
+                                {
+                                    ListaEstudiantes.Add(reader.GetInt32("id_estudiante"));
+                                }
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Estudiantes obtenidos exitosamente";
+                            respuesta.ValorRetorno = ListaEstudiantes;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
     }
 }
