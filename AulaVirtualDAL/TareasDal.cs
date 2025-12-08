@@ -601,6 +601,52 @@ namespace AulaVirtualDAL
             return respuesta;
         }
 
+        public Respuesta<bool> VerificarEstudianteAsignadoATarea(int TareaId, int EstudianteId, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT COUNT(*) 
+                        FROM dbo.tareas t
+                        WHERE t.id_tarea = @TareaId
+                          AND (
+                              t.id_asignado = @EstudianteId
+                              OR EXISTS (
+                                  SELECT 1 
+                                  FROM dbo.tarea_estudiante te 
+                                  WHERE te.id_tarea = @TareaId 
+                                    AND te.id_estudiante = @EstudianteId
+                              )
+                          )";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        int count = Convert.ToInt32(command.ExecuteScalar());
+
+                        respuesta.Ok = true;
+                        respuesta.ValorRetorno = count > 0;
+                        respuesta.Mensaje = count > 0 ? "El estudiante está asignado a la tarea" : "El estudiante no está asignado a la tarea";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
         public Respuesta<bool> AsignarEstudiantesATarea(int TareaId, List<int> EstudianteIds, string Conexion)
         {
             Respuesta<bool> respuesta = new Respuesta<bool>();
