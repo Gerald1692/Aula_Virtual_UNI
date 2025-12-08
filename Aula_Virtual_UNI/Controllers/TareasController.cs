@@ -428,5 +428,106 @@ namespace Aula_Virtual_UNI.Controllers
 
             return reply;
         }
+
+        [HttpPost]
+        public Respuesta<bool> ActualizarEstadoTarea([FromBody] dynamic data)
+        {
+            Respuesta<bool> reply = new Respuesta<bool>();
+
+            try
+            {
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                var rol = HttpContext.Session.GetString("Rol");
+                string idUsuarioStr = Request.Cookies["IdUsuario"];
+                var rolNormalizado = NormalizarRol(rol);
+
+                // Solo estudiantes pueden actualizar el estado de sus tareas asignadas
+                if (rolNormalizado != "Estudiante" || string.IsNullOrEmpty(idUsuarioStr) || !int.TryParse(idUsuarioStr, out int idUsuario))
+                {
+                    reply.Ok = false;
+                    reply.Mensaje = "Solo los estudiantes pueden actualizar el estado de sus tareas asignadas.";
+                    return reply;
+                }
+
+                int tareaId = Convert.ToInt32(data.tareaId ?? data.TareaId);
+                string nuevoEstado = (string)(data.estado ?? data.Estado);
+
+                // Validar estados permitidos
+                string[] estadosValidos = { "pendiente", "en progreso", "completada" };
+                if (!estadosValidos.Contains(nuevoEstado.ToLower()))
+                {
+                    reply.Ok = false;
+                    reply.Mensaje = "Estado no válido. Los estados permitidos son: pendiente, en progreso, completada.";
+                    return reply;
+                }
+
+                // Verificar que el estudiante esté asignado a la tarea
+                var verificacionRespuesta = AccesoDAL.VerificarEstudianteAsignadoATarea(tareaId, idUsuario, conexion);
+                if (verificacionRespuesta == null || !verificacionRespuesta.Ok || !verificacionRespuesta.ValorRetorno)
+                {
+                    reply.Ok = false;
+                    reply.Mensaje = "No tienes permiso para actualizar esta tarea. Solo puedes actualizar el estado de tareas asignadas a ti.";
+                    return reply;
+                }
+
+                // Obtener el estado actual de la tarea para validar la transición
+                var tareasRespuesta = AccesoDAL.ObtenerTodasLasTareasDeProyectosDelEstudiante(idUsuario, conexion);
+                if (tareasRespuesta != null && tareasRespuesta.Ok && tareasRespuesta.ValorRetorno != null)
+                {
+                    var tarea = tareasRespuesta.ValorRetorno.FirstOrDefault(t => t.Id == tareaId);
+                    if (tarea != null)
+                    {
+                        string estadoActual = tarea.Estado?.ToLower() ?? "pendiente";
+                        string nuevoEstadoLower = nuevoEstado.ToLower();
+
+                        // Validar transición de estados
+                        bool transicionValida = false;
+                        if (estadoActual == "pendiente" && nuevoEstadoLower == "en progreso")
+                        {
+                            transicionValida = true;
+                        }
+                        else if (estadoActual == "en progreso" && nuevoEstadoLower == "completada")
+                        {
+                            transicionValida = true;
+                        }
+                        else if (estadoActual == nuevoEstadoLower)
+                        {
+                            transicionValida = true; // Permitir mantener el mismo estado
+                        }
+                        else if (estadoActual == "pendiente" && nuevoEstadoLower == "completada")
+                        {
+                            // Permitir saltar de pendiente a completada
+                            transicionValida = true;
+                        }
+
+                        if (!transicionValida)
+                        {
+                            reply.Ok = false;
+                            reply.Mensaje = $"No puedes cambiar el estado de '{estadoActual}' a '{nuevoEstado}'. Las transiciones válidas son: pendiente → en progreso → completada.";
+                            return reply;
+                        }
+                    }
+                }
+
+                // Actualizar el estado
+                var respuesta = AccesoDAL.ActualizarEstadoTarea(tareaId, nuevoEstado, conexion);
+                if (respuesta != null && respuesta.Ok)
+                {
+                    reply = respuesta;
+                }
+                else
+                {
+                    reply.Ok = false;
+                    reply.Mensaje = respuesta?.Mensaje ?? "Error al actualizar el estado de la tarea.";
+                }
+            }
+            catch (Exception ex)
+            {
+                reply.Ok = false;
+                reply.Mensaje = $"Ha ocurrido un error al actualizar el estado de la tarea: {ex.Message}";
+            }
+
+            return reply;
+        }
     }
 }
