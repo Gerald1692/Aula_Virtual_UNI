@@ -55,8 +55,8 @@ namespace Aula_Virtual_UNI.Controllers
                         ViewBag.ListaProyectos = new List<Entities.Proyectos>();
                     }
 
-                    // Obtener tareas asignadas al estudiante
-                    var tareasRespuesta = _tareasDAL.ObtenerTareasPorEstudiante(idUsuario, conexion);
+                    // Obtener TODAS las tareas de los proyectos donde el estudiante está asignado
+                    var tareasRespuesta = _tareasDAL.ObtenerTodasLasTareasDeProyectosDelEstudiante(idUsuario, conexion);
                     if (tareasRespuesta != null && tareasRespuesta.Ok)
                     {
                         ViewBag.ListaTareas = tareasRespuesta.ValorRetorno ?? new List<Entities.Tarea>();

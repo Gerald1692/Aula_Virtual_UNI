@@ -101,16 +101,58 @@ namespace Aula_Virtual_UNI.Controllers
 
                 var respuesta = AccesoDAL.InsertarProyecto(Proyecto, conexion);
 
-                if (respuesta != null)
+                if (respuesta != null && respuesta.Ok && respuesta.ValorRetorno != null)
                 {
-
                     reply = respuesta;
 
-
+                    // Asignar estudiantes al proyecto en la tabla proyecto_estudiante
+                    // Esto permite que los estudiantes vean el proyecto en "Recursos" -> "Proyectos Asignados"
+                    // Normalizar id_asignado: puede venir como null, string, o lista
+                    List<string> listaEstudiantes = new List<string>();
+                    if (proyectoData.id_asignado != null)
+                    {
+                        listaEstudiantes = proyectoData.id_asignado;
+                    }
+                    else if (!string.IsNullOrEmpty(Proyecto.id_asignado))
+                    {
+                        // Si viene como string separado por comas, convertirlo a lista
+                        listaEstudiantes = Proyecto.id_asignado.Split(',').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+                    }
+                    
+                    if (listaEstudiantes != null && listaEstudiantes.Count > 0)
+                    {
+                        int asignacionesExitosas = 0;
+                        int asignacionesFallidas = 0;
+                        
+                        foreach (var estudianteIdStr in listaEstudiantes)
+                        {
+                            if (!string.IsNullOrWhiteSpace(estudianteIdStr) && int.TryParse(estudianteIdStr, out int estudianteId))
+                            {
+                                var asignacionRespuesta = AccesoDAL.AsignarEstudianteProyecto(respuesta.ValorRetorno.id_proyecto, estudianteId, conexion);
+                                if (asignacionRespuesta != null && asignacionRespuesta.Ok)
+                                {
+                                    asignacionesExitosas++;
+                                }
+                                else
+                                {
+                                    asignacionesFallidas++;
+                                    // Registrar el error
+                                    System.Diagnostics.Debug.WriteLine($"Error al asignar estudiante {estudianteId}: {(asignacionRespuesta?.Mensaje ?? "Error desconocido")}");
+                                }
+                            }
+                        }
+                        
+                        // Agregar información sobre las asignaciones al mensaje de respuesta
+                        if (asignacionesExitosas > 0)
+                        {
+                            reply.Mensaje += $" {asignacionesExitosas} estudiante(s) asignado(s) correctamente.";
+                        }
+                        if (asignacionesFallidas > 0)
+                        {
+                            reply.Mensaje += $" {asignacionesFallidas} asignación(es) fallaron.";
+                        }
+                    }
                 }
-
-
-
 
             }
             catch (Exception ex)
@@ -205,6 +247,27 @@ namespace Aula_Virtual_UNI.Controllers
             {
                 reply.Ok = false;
                 reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método AsignarEstudiante: {ex.Message}";
+            }
+            return reply;
+        }
+
+        [HttpPost]
+        public Respuesta<bool> MigrarAsignacionesExistentes()
+        {
+            Respuesta<bool> reply = new Respuesta<bool>();
+            try
+            {
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                var respuesta = AccesoDAL.MigrarAsignacionesProyectosExistentes(conexion);
+                if (respuesta != null)
+                {
+                    reply = respuesta;
+                }
+            }
+            catch (Exception ex)
+            {
+                reply.Ok = false;
+                reply.Mensaje = $"Error al migrar asignaciones: {ex.Message}";
             }
             return reply;
         }

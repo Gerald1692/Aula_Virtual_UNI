@@ -30,6 +30,7 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, 250) { Value = Tarea.Descripcion });
                         command.Parameters.Add(new SqlParameter("@ProyectoId", SqlDbType.Int) { Value = Tarea.ProyectoId });
                         command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.Int) { Value = Tarea.EstudianteAsignadoId ?? 0 });
+                        command.Parameters.Add(new SqlParameter("@IdCreador", SqlDbType.Int) { Value = Tarea.IdCreador ?? (object)DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@FechaInicio", SqlDbType.Date) { Value = Tarea.FechaInicio.HasValue ? (object)Tarea.FechaInicio.Value : DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@FechaLimite", SqlDbType.Date) { Value = Tarea.FechaLimite });
                         command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = Tarea.Estado });
@@ -112,10 +113,108 @@ namespace AulaVirtualDAL
                                     Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
                                     ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
                                     EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
                                     FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
                                     FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
                                     Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
                                     NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
+                                    Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
+                                    EstudiantesAsignados = new List<Usuario>()
+                                };
+
+                                ListaTareas.Add(Tarea);
+                            }
+                        }
+
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Tarea>> ObtenerTodasLasTareasDeProyectosDelEstudiante(int EstudianteId, string Conexion)
+        {
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Obtener TODAS las tareas de los proyectos donde el estudiante está asignado
+                    string query = @"
+                        SELECT DISTINCT
+                            t.id_tarea AS Id,
+                            t.titulo AS Titulo,
+                            t.descripcion AS Descripcion,
+                            t.id_proyecto AS ProyectoId,
+                            t.id_asignado AS EstudianteAsignadoId,
+                            t.id_creador AS IdCreador,
+                            t.fecha_inicio AS FechaInicio,
+                            t.fecha_limite AS FechaLimite,
+                            t.estado AS Estado,
+                            p.curso AS Curso,
+                            CONCAT(u_asignado.nombre, ' ', u_asignado.apellido1, ' ', ISNULL(u_asignado.apellido2, '')) AS NombreAsignado,
+                            CONCAT(u_creador.nombre, ' ', u_creador.apellido1, ' ', ISNULL(u_creador.apellido2, '')) AS NombreCreador
+                        FROM dbo.tareas t
+                        INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
+                        INNER JOIN dbo.proyecto_estudiante pe ON p.id_proyecto = pe.id_proyecto
+                        LEFT JOIN dbo.usuarios u_asignado ON t.id_asignado = u_asignado.id_usuario
+                        LEFT JOIN dbo.usuarios u_creador ON t.id_creador = u_creador.id_usuario
+                        WHERE pe.id_estudiante = @EstudianteId
+                        ORDER BY t.fecha_limite DESC";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Tarea Tarea = new Tarea
+                                {
+                                    Id = reader.IsDBNull("Id") ? 0 : reader.GetInt32("Id"),
+                                    Titulo = reader.IsDBNull("Titulo") ? string.Empty : reader.GetString("Titulo"),
+                                    Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
+                                    ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
+                                    EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
+                                    FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
+                                    FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
+                                    Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
+                                    NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
                                     Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
                                     EstudiantesAsignados = new List<Usuario>()
                                 };
@@ -168,6 +267,7 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
+                    // Obtener solo las tareas creadas por el estudiante (id_creador = EstudianteId)
                     string query = @"
                         SELECT 
                             t.id_tarea AS Id,
@@ -175,31 +275,18 @@ namespace AulaVirtualDAL
                             t.descripcion AS Descripcion,
                             t.id_proyecto AS ProyectoId,
                             t.id_asignado AS EstudianteAsignadoId,
+                            t.id_creador AS IdCreador,
                             t.fecha_inicio AS FechaInicio,
                             t.fecha_limite AS FechaLimite,
                             t.estado AS Estado,
                             p.curso AS Curso,
-                            CONCAT(u.nombre, ' ', u.apellido1, ' ', ISNULL(u.apellido2, '')) AS NombreAsignado
+                            CONCAT(u_asignado.nombre, ' ', u_asignado.apellido1, ' ', ISNULL(u_asignado.apellido2, '')) AS NombreAsignado,
+                            CONCAT(u_creador.nombre, ' ', u_creador.apellido1, ' ', ISNULL(u_creador.apellido2, '')) AS NombreCreador
                         FROM dbo.tareas t
                         INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
-                        LEFT JOIN dbo.usuarios u ON t.id_asignado = u.id_usuario
-                        WHERE t.id_asignado = @EstudianteId
-                          -- Excluir tareas que tienen registros en tarea_estudiante (asignadas por profesor)
-                          AND NOT EXISTS (
-                              SELECT 1 
-                              FROM dbo.tarea_estudiante te 
-                              WHERE te.id_tarea = t.id_tarea
-                          )
-                          -- Excluir tareas donde el estudiante está en proyecto_estudiante (proyecto asignado por profesor)
-                          AND NOT EXISTS (
-                              SELECT 1 
-                              FROM dbo.proyecto_estudiante pe 
-                              WHERE pe.id_proyecto = t.id_proyecto 
-                                AND pe.id_estudiante = @EstudianteId
-                          )
-                          -- Solo mostrar tareas en proyectos asignados directamente al estudiante
-                          -- (no proyectos asignados por profesor mediante proyecto_estudiante)
-                          AND p.id_asignado = @EstudianteId
+                        LEFT JOIN dbo.usuarios u_asignado ON t.id_asignado = u_asignado.id_usuario
+                        LEFT JOIN dbo.usuarios u_creador ON t.id_creador = u_creador.id_usuario
+                        WHERE t.id_creador = @EstudianteId
                         ORDER BY t.fecha_limite DESC";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -217,10 +304,12 @@ namespace AulaVirtualDAL
                                     Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
                                     ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
                                     EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
                                     FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
                                     FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
                                     Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
                                     NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
                                     Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
                                     EstudiantesAsignados = new List<Usuario>()
                                 };

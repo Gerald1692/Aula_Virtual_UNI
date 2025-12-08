@@ -315,13 +315,20 @@
             estudianteNombre = selectedEstudianteOption ? selectedEstudianteOption.text : "";
         }
 
+        // Obtener los IDs de estudiantes seleccionados
+        const estudiantesSeleccionados = $('#estudianteSelect').val();
+        // Asegurar que siempre sea un array
+        const idAsignadoArray = Array.isArray(estudiantesSeleccionados) 
+            ? estudiantesSeleccionados 
+            : (estudiantesSeleccionados ? [estudiantesSeleccionados] : []);
+
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
             fecha: inputs.fecha.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente',
-            id_asignado: $('#estudianteSelect').val(),
+            id_asignado: idAsignadoArray,
             nombreAsignado: estudianteNombre
         };
 

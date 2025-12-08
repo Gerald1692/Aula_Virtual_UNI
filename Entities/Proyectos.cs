@@ -19,6 +19,8 @@ namespace Entities
         public string? estado { get; set; }
         public string? id_asignado { get; set; }
         public string? NombreAsignado { get; set; }
+        public string? NombreProfesor { get; set; }
+        public List<Usuario>? Integrantes { get; set; }
 
         
 

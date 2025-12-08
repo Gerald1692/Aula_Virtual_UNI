@@ -28,7 +28,9 @@
 
 
 
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
@@ -77,22 +79,19 @@
                         }
                     </select>
                 </label>
-                @if (string.IsNullOrEmpty(rol) || rol != "1")
-                {
-                    <label class="form-field">
-                        <span>Estudiante Asignado</span>
-                        <select name="estudiante" id="estudianteSelect" required>
-                            <option value="">Seleccione un estudiante</option>
-                            @if (ViewBag.ListaEstudiantes != null)
+                <label class="form-field">
+                    <span>Estudiante Asignado</span>
+                    <select class="js-example-basic-multiple" name="estudiante" id="estudianteSelect" multiple="multiple" required>
+                        <option value="">Seleccione un proyecto primero</option>
+                        @if (ViewBag.ListaEstudiantes != null && ((List<Entities.Usuario>)ViewBag.ListaEstudiantes).Count > 0)
+                        {
+                            @foreach (var estudiante in ViewBag.ListaEstudiantes)
                             {
-                                @foreach (var estudiante in ViewBag.ListaEstudiantes)
-                                {
-                                    <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
-                                }
+                                <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
                             }
-                        </select>
-                    </label>
-                }
+                        }
+                    </select>
+                </label>
                 <label class="form-field">
                     <span>Fecha límite</span>
                     <input type="date" name="fechaLimite" required />

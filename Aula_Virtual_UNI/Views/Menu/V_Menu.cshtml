@@ -104,6 +104,32 @@
                                                 </span>
                                             }
                                         </div>
+                                        @if (!string.IsNullOrEmpty(proyecto.NombreProfesor))
+                                        {
+                                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                                                <p style="font-size: 0.85em; color: #555; margin: 5px 0;">
+                                                    <i class="fa-solid fa-chalkboard-teacher"></i> 
+                                                    <strong>Asignado por:</strong> @proyecto.NombreProfesor
+                                                </p>
+                                            </div>
+                                        }
+                                        @if (proyecto.Integrantes != null && proyecto.Integrantes.Count > 0)
+                                        {
+                                            <div style="margin-top: 8px;">
+                                                <p style="font-size: 0.85em; color: #555; margin: 5px 0;">
+                                                    <i class="fa-solid fa-users"></i> 
+                                                    <strong>Integrantes:</strong>
+                                                </p>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                                    @foreach (var integrante in proyecto.Integrantes)
+                                                    {
+                                                        <span style="background: #e8f4f8; color: #297ea6; padding: 4px 10px; border-radius: 12px; font-size: 0.8em;">
+                                                            @integrante.NombreCompleto
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -151,6 +177,32 @@
                                                 </span>
                                             }
                                         </div>
+                                        @if (!string.IsNullOrEmpty(tarea.NombreCreador))
+                                        {
+                                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                                                <p style="font-size: 0.85em; color: #555; margin: 5px 0;">
+                                                    <i class="fa-solid fa-user-plus"></i> 
+                                                    <strong>Creado por:</strong> @tarea.NombreCreador
+                                                </p>
+                                            </div>
+                                        }
+                                        @if (tarea.EstudiantesAsignados != null && tarea.EstudiantesAsignados.Count > 0)
+                                        {
+                                            <div style="margin-top: 8px;">
+                                                <p style="font-size: 0.85em; color: #555; margin: 5px 0;">
+                                                    <i class="fa-solid fa-user-check"></i> 
+                                                    <strong>Asignado a:</strong>
+                                                </p>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                                                    @foreach (var estudiante in tarea.EstudiantesAsignados)
+                                                    {
+                                                        <span style="background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 12px; font-size: 0.8em;">
+                                                            @estudiante.NombreCompleto
+                                                        </span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>

@@ -190,15 +190,92 @@ namespace AulaVirtualDAL
                             p.fecha_finalizacion,
                             p.id_profesor,
                             p.curso,
-                            p.estado
+                            p.estado,
+                            CONCAT(u_prof.nombre, ' ', u_prof.apellido1, ' ', ISNULL(u_prof.apellido2, '')) AS NombreProfesor
                         FROM dbo.proyectos p
-                        WHERE p.id_asignado = @EstudianteId
-                           OR EXISTS (
+                        INNER JOIN dbo.usuarios u_prof ON p.id_profesor = u_prof.id_usuario
+                        WHERE EXISTS (
                                SELECT 1 
                                FROM dbo.proyecto_estudiante pe 
                                WHERE pe.id_proyecto = p.id_proyecto 
                                  AND pe.id_estudiante = @EstudianteId
                            )
+                        ORDER BY p.fecha_finalizacion DESC";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Proyectos Proyecto = new Proyectos
+                                {
+                                    id_proyecto = reader.IsDBNull("id_proyecto") ? 0 : reader.GetInt32("id_proyecto"),
+                                    nombre = reader.IsDBNull("nombre") ? null : reader.GetString("nombre"),
+                                    descripcion = reader.IsDBNull("descripcion") ? null : reader.GetString("descripcion"),
+                                    fecha_inicio = reader.IsDBNull("fecha_inicio") ? DateTime.MinValue : reader.GetDateTime("fecha_inicio"),
+                                    fecha_finalizacion = reader.IsDBNull("fecha_finalizacion") ? DateTime.MinValue : reader.GetDateTime("fecha_finalizacion"),
+                                    id_profesor = reader.IsDBNull("id_profesor") ? 0 : reader.GetInt32("id_profesor"),
+                                    curso = reader.IsDBNull("curso") ? null : reader.GetString("curso"),
+                                    estado = reader.IsDBNull("estado") ? null : reader.GetString("estado"),
+                                    NombreProfesor = reader.IsDBNull("NombreProfesor") ? null : reader.GetString("NombreProfesor"),
+                                    Integrantes = new List<Usuario>()
+                                };
+
+                                ListaProyectos.Add(Proyecto);
+                            }
+                        }
+
+                        // Obtener los integrantes de cada proyecto
+                        foreach (var proyecto in ListaProyectos)
+                        {
+                            var integrantesRespuesta = ObtenerEstudiantesDelProyectoCompleto(proyecto.id_proyecto, Conexion);
+                            if (integrantesRespuesta.Ok && integrantesRespuesta.ValorRetorno != null)
+                            {
+                                proyecto.Integrantes = integrantesRespuesta.ValorRetorno;
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaProyectos;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Proyectos>> ObtenerProyectosAsignadosAlEstudiante(int EstudianteId, string Conexion)
+        {
+            Respuesta<List<Proyectos>> respuesta = new Respuesta<List<Proyectos>>();
+            List<Proyectos> ListaProyectos = new List<Proyectos>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT DISTINCT
+                            p.id_proyecto,
+                            p.nombre,
+                            p.descripcion,
+                            p.fecha_inicio,
+                            p.fecha_finalizacion,
+                            p.id_profesor,
+                            p.curso,
+                            p.estado
+                        FROM dbo.proyectos p
+                        INNER JOIN dbo.proyecto_estudiante pe ON p.id_proyecto = pe.id_proyecto
+                        WHERE pe.id_estudiante = @EstudianteId
                         ORDER BY p.fecha_finalizacion DESC";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
@@ -365,6 +442,113 @@ namespace AulaVirtualDAL
             {
                 respuesta.Ok = false;
                 respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Usuario>> ObtenerEstudiantesDelProyectoCompleto(int ProyectoId, string Conexion)
+        {
+            Respuesta<List<Usuario>> respuesta = new Respuesta<List<Usuario>>();
+            List<Usuario> ListaEstudiantes = new List<Usuario>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Obtener estudiantes asignados al proyecto desde proyecto_estudiante
+                    string query = @"
+                        SELECT 
+                            u.id_usuario AS Id,
+                            CONCAT(u.nombre, ' ', u.apellido1, ' ', ISNULL(u.apellido2, '')) AS NombreCompleto,
+                            u.cedula     AS Matricula,
+                            u.correo     AS Email
+                        FROM dbo.proyecto_estudiante pe
+                        INNER JOIN dbo.usuarios u ON pe.id_estudiante = u.id_usuario
+                        WHERE pe.id_proyecto = @ProyectoId
+                          AND u.id_rol = 1  -- 1 = Estudiante
+                        ORDER BY u.apellido1, u.nombre";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@ProyectoId", SqlDbType.Int) { Value = ProyectoId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Usuario estudiante = new Usuario
+                                {
+                                    Id = reader.IsDBNull("Id") ? 0 : reader.GetInt32("Id"),
+                                    NombreCompleto = reader.IsDBNull("NombreCompleto") ? string.Empty : reader.GetString("NombreCompleto"),
+                                    Cedula = reader.IsDBNull("Matricula") ? string.Empty : reader.GetString("Matricula"),
+                                    Email = reader.IsDBNull("Email") ? string.Empty : reader.GetString("Email")
+                                };
+
+                                ListaEstudiantes.Add(estudiante);
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Estudiantes obtenidos exitosamente";
+                            respuesta.ValorRetorno = ListaEstudiantes;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> MigrarAsignacionesProyectosExistentes(string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Script SQL para migrar estudiantes desde proyectos.id_asignado a proyecto_estudiante
+                    string query = @"
+                        -- Migrar estudiantes desde proyectos.id_asignado a proyecto_estudiante
+                        -- Solo para proyectos que no tienen asignaciones en proyecto_estudiante
+                        INSERT INTO dbo.proyecto_estudiante (id_proyecto, id_estudiante)
+                        SELECT DISTINCT
+                            p.id_proyecto,
+                            CAST(LTRIM(RTRIM(value)) AS INT) AS id_estudiante
+                        FROM dbo.proyectos p
+                        CROSS APPLY STRING_SPLIT(p.id_asignado, ',') s
+                        WHERE p.id_asignado IS NOT NULL
+                          AND LTRIM(RTRIM(value)) != ''
+                          AND ISNUMERIC(LTRIM(RTRIM(value))) = 1
+                          AND NOT EXISTS (
+                              SELECT 1 
+                              FROM dbo.proyecto_estudiante pe 
+                              WHERE pe.id_proyecto = p.id_proyecto 
+                                AND pe.id_estudiante = CAST(LTRIM(RTRIM(s.value)) AS INT)
+                          )";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        int filasAfectadas = command.ExecuteNonQuery();
+                        
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Se migraron {filasAfectadas} asignación(es) de proyectos existentes.";
+                        respuesta.ValorRetorno = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = $"Error al migrar asignaciones: {ex.Message}";
             }
 
             return respuesta;

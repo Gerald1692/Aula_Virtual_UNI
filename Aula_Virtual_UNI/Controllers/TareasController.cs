@@ -46,8 +46,8 @@ namespace Aula_Virtual_UNI.Controllers
                     ViewBag.ListaTareas = new List<Tarea>();
                 }
 
-                // Los estudiantes ven todos los proyectos disponibles para crear tareas
-                var proyectosRespuesta = ProyectosDAL.ObtenerProyectos(conexion);
+                // Los estudiantes solo ven proyectos donde están asignados para crear tareas
+                var proyectosRespuesta = ProyectosDAL.ObtenerProyectosAsignadosAlEstudiante(idUsuario, conexion);
                 if (proyectosRespuesta != null && proyectosRespuesta.Ok)
                 {
                     ViewBag.ListaProyectos = proyectosRespuesta.ValorRetorno ?? new List<Proyectos>();
@@ -56,6 +56,10 @@ namespace Aula_Virtual_UNI.Controllers
                 {
                     ViewBag.ListaProyectos = new List<Proyectos>();
                 }
+
+                // Para estudiantes, no cargar estudiantes inicialmente
+                // Se cargarán dinámicamente cuando se seleccione un proyecto
+                ViewBag.ListaEstudiantes = new List<Usuario>();
             }
             else
             {
@@ -68,13 +72,17 @@ namespace Aula_Virtual_UNI.Controllers
                 {
                     ViewBag.ListaProyectos = proyectos.ValorRetorno;
                 }
-            }
 
-            // Obtener estudiantes para el dropdown (para profesores y estudiantes)
-            var estudiantes = UsuariosDAL.ObtenerEstudiantes(conexion);
-            if (estudiantes != null && estudiantes.Ok)
-            {
-                ViewBag.ListaEstudiantes = estudiantes.ValorRetorno;
+                // Para profesores, cargar todos los estudiantes inicialmente
+                var estudiantes = UsuariosDAL.ObtenerEstudiantes(conexion);
+                if (estudiantes != null && estudiantes.Ok)
+                {
+                    ViewBag.ListaEstudiantes = estudiantes.ValorRetorno;
+                }
+                else
+                {
+                    ViewBag.ListaEstudiantes = new List<Usuario>();
+                }
             }
 
             // Pasar el rol a la vista
@@ -115,15 +123,51 @@ namespace Aula_Virtual_UNI.Controllers
                 // Normalizar el rol para comparación consistente
                 var rolNormalizado = NormalizarRol(rol);
 
-                // Si es estudiante y no ha seleccionado un estudiante asignado, usar su propio ID
-                // Si ha seleccionado un estudiante, usar ese ID (el estudiante puede asignar tareas a sus compañeros)
+                // Si es estudiante, establecer el creador y validar permisos
                 if (rolNormalizado == "Estudiante" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
                 {
-                    // Si no se especificó un estudiante asignado, usar el ID del estudiante que crea la tarea
-                    if (Tarea.EstudianteAsignadoId == null || Tarea.EstudianteAsignadoId == 0)
+                    // Establecer el creador de la tarea
+                    Tarea.IdCreador = idUsuario;
+
+                    // Validar que el estudiante esté asignado al proyecto
+                    var proyectosRespuesta = ProyectosDAL.ObtenerProyectosAsignadosAlEstudiante(idUsuario, conexion);
+                    if (proyectosRespuesta == null || !proyectosRespuesta.Ok || 
+                        proyectosRespuesta.ValorRetorno == null || 
+                        !proyectosRespuesta.ValorRetorno.Any(p => p.id_proyecto == Tarea.ProyectoId))
                     {
-                        Tarea.EstudianteAsignadoId = idUsuario;
+                        reply.Ok = false;
+                        reply.Mensaje = "No tienes permiso para crear tareas en este proyecto. Solo puedes crear tareas en proyectos donde estás asignado.";
+                        return reply;
                     }
+
+                    // Validar que los estudiantes asignados pertenezcan al MISMO proyecto
+                    List<int> estudiantesParaValidar = new List<int>();
+                    if (Tarea.EstudiantesAsignadosIds != null && Tarea.EstudiantesAsignadosIds.Count > 0)
+                    {
+                        estudiantesParaValidar = Tarea.EstudiantesAsignadosIds;
+                    }
+                    else if (Tarea.EstudianteAsignadoId.HasValue && Tarea.EstudianteAsignadoId.Value > 0)
+                    {
+                        estudiantesParaValidar.Add(Tarea.EstudianteAsignadoId.Value);
+                    }
+
+                    foreach (var estudianteId in estudiantesParaValidar)
+                    {
+                        var estudianteAsignadoProyectos = ProyectosDAL.ObtenerProyectosAsignadosAlEstudiante(estudianteId, conexion);
+                        if (estudianteAsignadoProyectos == null || !estudianteAsignadoProyectos.Ok || 
+                            estudianteAsignadoProyectos.ValorRetorno == null ||
+                            !estudianteAsignadoProyectos.ValorRetorno.Any(p => p.id_proyecto == Tarea.ProyectoId))
+                        {
+                            reply.Ok = false;
+                            reply.Mensaje = "Solo puedes asignar tareas a estudiantes del mismo proyecto, no a integrantes de otros proyectos.";
+                            return reply;
+                        }
+                    }
+                }
+                else if (rolNormalizado == "Profesor" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idProfesor))
+                {
+                    // Para profesores, también establecer el creador
+                    Tarea.IdCreador = idProfesor;
                 }
 
                 var respuesta = AccesoDAL.InsertarTarea(Tarea, conexion);
@@ -132,12 +176,24 @@ namespace Aula_Virtual_UNI.Controllers
                 {
                     reply = respuesta;
 
-                    // Obtener todos los estudiantes del proyecto y asignarlos a la tarea
-                    var estudiantesProyecto = ProyectosDAL.ObtenerEstudiantesDelProyecto(Tarea.ProyectoId, conexion);
-                    if (estudiantesProyecto != null && estudiantesProyecto.Ok && estudiantesProyecto.ValorRetorno != null && estudiantesProyecto.ValorRetorno.Count > 0)
+                    // Asignar estudiantes a la tarea
+                    List<int> estudiantesParaAsignar = new List<int>();
+                    
+                    // Si hay múltiples estudiantes asignados, usar esa lista
+                    if (Tarea.EstudiantesAsignadosIds != null && Tarea.EstudiantesAsignadosIds.Count > 0)
                     {
-                        // Asignar todos los estudiantes del proyecto a la tarea
-                        var asignacionRespuesta = AccesoDAL.AsignarEstudiantesATarea(respuesta.ValorRetorno.Id, estudiantesProyecto.ValorRetorno, conexion);
+                        estudiantesParaAsignar = Tarea.EstudiantesAsignadosIds;
+                    }
+                    // Si solo hay un estudiante asignado, usar ese
+                    else if (Tarea.EstudianteAsignadoId.HasValue && Tarea.EstudianteAsignadoId.Value > 0)
+                    {
+                        estudiantesParaAsignar.Add(Tarea.EstudianteAsignadoId.Value);
+                    }
+
+                    // Asignar los estudiantes a la tarea
+                    if (estudiantesParaAsignar.Count > 0)
+                    {
+                        var asignacionRespuesta = AccesoDAL.AsignarEstudiantesATarea(respuesta.ValorRetorno.Id, estudiantesParaAsignar, conexion);
                         if (asignacionRespuesta != null && asignacionRespuesta.Ok)
                         {
                             // Actualizar el mensaje para incluir información sobre las asignaciones
@@ -211,11 +267,60 @@ namespace Aula_Virtual_UNI.Controllers
             try
             {
                 var conexion = _configuration.GetConnectionString("ConexionDB");
+                var rol = HttpContext.Session.GetString("Rol");
+                string idUsuarioStr = Request.Cookies["IdUsuario"];
+
+                // Normalizar el rol para comparación consistente
+                var rolNormalizado = NormalizarRol(rol);
+
+                // Validar que solo el creador puede editar la tarea
+                if (rolNormalizado == "Estudiante" && !string.IsNullOrEmpty(idUsuarioStr) && int.TryParse(idUsuarioStr, out int idUsuario))
+                {
+                    // Obtener la tarea para verificar el creador
+                    var tareasRespuesta = AccesoDAL.ObtenerTareasCreadasPorEstudiante(idUsuario, conexion);
+                    if (tareasRespuesta == null || !tareasRespuesta.Ok || 
+                        tareasRespuesta.ValorRetorno == null ||
+                        !tareasRespuesta.ValorRetorno.Any(t => t.Id == Tarea.Id && t.IdCreador == idUsuario))
+                    {
+                        reply.Ok = false;
+                        reply.Mensaje = "No tienes permiso para editar esta tarea. Solo el creador puede editarla.";
+                        return reply;
+                    }
+                }
+
                 var respuesta = AccesoDAL.ActualizarTarea(Tarea, conexion);
 
-                if (respuesta != null)
+                if (respuesta != null && respuesta.Ok)
                 {
                     reply = respuesta;
+
+                    // Actualizar asignaciones de estudiantes
+                    // Primero eliminar todas las asignaciones existentes
+                    var eliminarRespuesta = AccesoDAL.EliminarAsignacionesEstudiantes(Tarea.Id, conexion);
+                    
+                    // Luego asignar los nuevos estudiantes
+                    List<int> estudiantesParaAsignar = new List<int>();
+                    
+                    // Si hay múltiples estudiantes asignados, usar esa lista
+                    if (Tarea.EstudiantesAsignadosIds != null && Tarea.EstudiantesAsignadosIds.Count > 0)
+                    {
+                        estudiantesParaAsignar = Tarea.EstudiantesAsignadosIds;
+                    }
+                    // Si solo hay un estudiante asignado, usar ese
+                    else if (Tarea.EstudianteAsignadoId.HasValue && Tarea.EstudianteAsignadoId.Value > 0)
+                    {
+                        estudiantesParaAsignar.Add(Tarea.EstudianteAsignadoId.Value);
+                    }
+
+                    // Asignar los estudiantes a la tarea
+                    if (estudiantesParaAsignar.Count > 0)
+                    {
+                        var asignacionRespuesta = AccesoDAL.AsignarEstudiantesATarea(Tarea.Id, estudiantesParaAsignar, conexion);
+                        if (asignacionRespuesta != null && asignacionRespuesta.Ok)
+                        {
+                            reply.Mensaje += $" {asignacionRespuesta.Mensaje}";
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -295,6 +400,30 @@ namespace Aula_Virtual_UNI.Controllers
             {
                 reply.Ok = false;
                 reply.Mensaje = $"Error al obtener estudiantes: {ex.Message}";
+            }
+
+            return reply;
+        }
+
+        [HttpGet]
+        public Respuesta<List<Usuario>> ObtenerEstudiantesPorProyecto(int proyectoId)
+        {
+            Respuesta<List<Usuario>> reply = new Respuesta<List<Usuario>>();
+
+            try
+            {
+                var conexion = _configuration.GetConnectionString("ConexionDB");
+                var respuesta = ProyectosDAL.ObtenerEstudiantesDelProyectoCompleto(proyectoId, conexion);
+
+                if (respuesta != null)
+                {
+                    reply = respuesta;
+                }
+            }
+            catch (Exception ex)
+            {
+                reply.Ok = false;
+                reply.Mensaje = $"Error al obtener estudiantes del proyecto: {ex.Message}";
             }
 
             return reply;

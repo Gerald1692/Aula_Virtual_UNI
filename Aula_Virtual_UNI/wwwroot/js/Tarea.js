@@ -21,10 +21,138 @@ document.addEventListener('DOMContentLoaded', function () {
         submitLabel = submitBtn.querySelector('.label-text');
     }
 
+    // Inicializar Select2 para el dropdown de estudiantes (múltiple)
+    function inicializarSelect2Estudiantes() {
+        if (inputs.estudiante && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            // Verificar si ya está inicializado
+            if (!jQuery('#estudianteSelect').hasClass('select2-hidden-accessible')) {
+                jQuery('#estudianteSelect').select2({
+                    placeholder: 'Seleccione un proyecto primero',
+                    allowClear: true,
+                    width: '100%',
+                    language: {
+                        noResults: function() {
+                            return "No hay estudiantes asignados a este proyecto";
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    // Función para cargar estudiantes de un proyecto
+    function cargarEstudiantesDelProyecto(proyectoId, estudiantesSeleccionadosIds = null) {
+        if (!inputs.estudiante) {
+            console.error('El select de estudiante no existe');
+            return;
+        }
+        
+        const estudianteSelect = inputs.estudiante;
+        
+        // Limpiar el dropdown
+        estudianteSelect.innerHTML = '';
+        
+        if (proyectoId && proyectoId !== '') {
+            console.log('Cargando estudiantes para proyecto:', proyectoId);
+            fetch(`/Tareas/ObtenerEstudiantesPorProyecto?proyectoId=${proyectoId}`)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(resultado => {
+                    console.log('Resultado completo:', resultado);
+                    if (resultado.ok && resultado.valorRetorno && resultado.valorRetorno.length > 0) {
+                        // Agregar estudiantes al dropdown
+                        // Manejar tanto camelCase (id) como PascalCase (Id)
+                        resultado.valorRetorno.forEach(estudiante => {
+                            const option = document.createElement('option');
+                            const estudianteId = estudiante.id || estudiante.Id;
+                            const estudianteNombre = estudiante.nombreCompleto || estudiante.NombreCompleto;
+                            option.value = estudianteId;
+                            option.textContent = estudianteNombre;
+                            
+                            // Si hay estudiantes seleccionados previamente, marcarlos
+                            if (estudiantesSeleccionadosIds && Array.isArray(estudiantesSeleccionadosIds)) {
+                                // Comparar como números para evitar problemas de tipo
+                                const estudianteIdNum = parseInt(estudianteId);
+                                if (estudiantesSeleccionadosIds.some(id => parseInt(id) === estudianteIdNum)) {
+                                    option.selected = true;
+                                }
+                            } else if (estudiantesSeleccionadosIds && parseInt(estudiantesSeleccionadosIds) === parseInt(estudianteId)) {
+                                option.selected = true;
+                            }
+                            
+                            estudianteSelect.appendChild(option);
+                        });
+                        
+                        // Actualizar Select2 después de agregar las opciones
+                        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+                            try {
+                                // Establecer valores seleccionados si hay
+                                if (estudiantesSeleccionadosIds && estudiantesSeleccionadosIds.length > 0) {
+                                    const idsNumericos = estudiantesSeleccionadosIds.map(id => parseInt(id));
+                                    jQuery('#estudianteSelect').val(idsNumericos).trigger('change');
+                                } else {
+                                    jQuery('#estudianteSelect').val(null).trigger('change');
+                                }
+                            } catch (e) {
+                                console.warn('Error al actualizar Select2:', e);
+                            }
+                        }
+                        
+                        console.log(`Se cargaron ${resultado.valorRetorno.length} estudiantes`);
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No hay estudiantes asignados a este proyecto';
+                        option.disabled = true;
+                        estudianteSelect.appendChild(option);
+                        console.log('No hay estudiantes asignados al proyecto. Resultado:', resultado);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener estudiantes:', error);
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'Error al cargar estudiantes';
+                    option.disabled = true;
+                    estudianteSelect.appendChild(option);
+                });
+        } else {
+            // Si no hay proyecto seleccionado, mostrar mensaje
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Seleccione un proyecto primero';
+            option.disabled = true;
+            estudianteSelect.appendChild(option);
+        }
+    }
+
+    // Inicializar Select2 para estudiantes (después de que el DOM esté listo)
+    // Usar setTimeout para asegurar que jQuery y Select2 estén cargados
+    setTimeout(function() {
+        inicializarSelect2Estudiantes();
+    }, 100);
+
     // Inicializar eventos para las tarjetas existentes
     document.querySelectorAll('.task-card').forEach(card => {
         attachCardEvents(card);
     });
+
+    // Actualizar dropdown de estudiantes cuando se selecciona un proyecto
+    if (inputs.proyecto && inputs.estudiante) {
+        inputs.proyecto.addEventListener('change', function() {
+            const proyectoId = this.value;
+            console.log('Proyecto seleccionado:', proyectoId);
+            // Limpiar la selección del estudiante al cambiar de proyecto
+            cargarEstudiantesDelProyecto(proyectoId);
+        });
+    } else {
+        console.error('No se encontraron los elementos proyecto o estudiante en el formulario');
+    }
 
     // Manejar el envío del formulario (Crear / Editar)
     form.addEventListener('submit', function (event) {
@@ -34,11 +162,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectedOption = proyectoSelect.options[proyectoSelect.selectedIndex];
         const proyectoNombre = selectedOption.getAttribute('data-nombre') || selectedOption.text;
 
+        // Obtener estudiantes seleccionados (múltiples)
+        let estudiantesSeleccionados = [];
         let estudianteNombre = "";
         if (inputs.estudiante) {
-            const estudianteSelect = inputs.estudiante;
-            const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
-            estudianteNombre = selectedEstudianteOption ? selectedEstudianteOption.text : "";
+            // Obtener valores seleccionados (puede ser array o string)
+            const estudiantesVal = inputs.estudiante.value || (typeof jQuery !== 'undefined' ? jQuery('#estudianteSelect').val() : null);
+            if (estudiantesVal) {
+                estudiantesSeleccionados = Array.isArray(estudiantesVal) ? estudiantesVal : [estudiantesVal];
+                
+                // Obtener nombres de los estudiantes seleccionados
+                const nombres = [];
+                estudiantesSeleccionados.forEach(id => {
+                    const option = inputs.estudiante.querySelector(`option[value="${id}"]`);
+                    if (option) {
+                        nombres.push(option.textContent);
+                    }
+                });
+                estudianteNombre = nombres.join(', ');
+            }
         }
 
         // Datos para enviar al servidor (solo propiedades de la entidad)
@@ -50,9 +192,16 @@ document.addEventListener('DOMContentLoaded', function () {
             estado: editingCard ? editingCard.dataset.estado : 'pendiente'
         };
 
-        // Solo agregar estudianteAsignadoId si el campo existe (para profesores)
-        if (inputs.estudiante && inputs.estudiante.value) {
-            data.estudianteAsignadoId = parseInt(inputs.estudiante.value);
+        // Agregar estudiantes asignados (puede ser uno o varios)
+        if (estudiantesSeleccionados.length > 0) {
+            // Si solo hay uno, mantener compatibilidad con el campo existente
+            if (estudiantesSeleccionados.length === 1) {
+                data.estudianteAsignadoId = parseInt(estudiantesSeleccionados[0]);
+            } else {
+                // Si hay múltiples, usar el primero como principal y agregar lista
+                data.estudianteAsignadoId = parseInt(estudiantesSeleccionados[0]);
+                data.estudiantesAsignadosIds = estudiantesSeleccionados.map(id => parseInt(id));
+            }
         }
 
         // Datos adicionales para la UI
@@ -360,13 +509,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
     // Función para llenar el formulario con datos de una tarjeta (Modo Edición)
     function populateForm(card) {
         inputs.titulo.value = card.dataset.titulo || '';
-        inputs.proyecto.value = card.dataset.proyectoid || '';
-        inputs.estudiante.value = card.dataset.estudianteid || '';
+        const proyectoId = card.dataset.proyectoid || '';
+        const tareaId = card.dataset.id || '';
         inputs.descripcion.value = card.dataset.descripcion || '';
         inputs.fechaLimite.value = card.dataset.fechalimite || '';
+
+        // Establecer el proyecto primero
+        inputs.proyecto.value = proyectoId;
+        
+        // Obtener todos los estudiantes asignados a la tarea desde el servidor
+        if (tareaId && proyectoId) {
+            fetch(`/Tareas/ObtenerEstudiantesTarea?tareaId=${tareaId}`)
+                .then(response => response.json())
+                .then(resultado => {
+                    if (resultado.ok && resultado.valorRetorno && resultado.valorRetorno.length > 0) {
+                        // Extraer IDs de los estudiantes
+                        const estudiantesIds = resultado.valorRetorno.map(e => e.id || e.Id);
+                        // Cargar estudiantes del proyecto y seleccionar los asignados
+                        cargarEstudiantesDelProyecto(proyectoId, estudiantesIds);
+                    } else {
+                        // Si no hay estudiantes asignados, solo cargar la lista del proyecto
+                        cargarEstudiantesDelProyecto(proyectoId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener estudiantes de la tarea:', error);
+                    // En caso de error, cargar la lista del proyecto sin selección
+                    cargarEstudiantesDelProyecto(proyectoId);
+                });
+        } else if (proyectoId) {
+            // Si no hay tareaId, solo cargar la lista del proyecto
+            cargarEstudiantesDelProyecto(proyectoId);
+        }
 
         editingCard = card;
         form.dataset.editing = 'true';
@@ -396,6 +574,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Función para limpiar el formulario
+    function clearForm() {
+        inputs.titulo.value = '';
+        inputs.proyecto.value = '';
+        inputs.descripcion.value = '';
+        inputs.fechaLimite.value = '';
+        
+        // Limpiar Select2 de estudiantes
+        if (inputs.estudiante && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery('#estudianteSelect').val(null).trigger('change');
+            inputs.estudiante.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
+        } else if (inputs.estudiante) {
+            inputs.estudiante.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
+        }
+        
+        editingCard = null;
+        form.dataset.editing = 'false';
+        if (submitLabel) {
+            submitLabel.textContent = 'Crear';
+        }
+    }
+
     // Función para manejar el estado vacío de la lista
     function ensureEmptyState() {
         const hasCards = taskList.querySelectorAll('.task-card').length > 0;
@@ -409,6 +609,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // Función para limpiar el formulario
     function clearForm() {
         form.reset();
+        
+        // Limpiar Select2 de estudiantes
+        if (inputs.estudiante && typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            jQuery('#estudianteSelect').val(null).trigger('change');
+            // Limpiar opciones y dejar solo el placeholder
+            inputs.estudiante.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
+        } else if (inputs.estudiante) {
+            inputs.estudiante.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
+        }
+        
         delete form.dataset.editing;
         editingCard = null;
         if (submitLabel) {
