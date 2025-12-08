@@ -157,15 +157,20 @@
                     <div class="tasks-list" style="display: flex; flex-direction: column; gap: 10px;">
                         @foreach (var tarea in (List<Entities.Tarea>)ViewBag.ListaTareas)
                         {
-                            <div class="task-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff;">
+                            <div class="task-card" data-tarea-id="@tarea.Id" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fff;">
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div style="flex: 1;">
                                         <h3 style="margin-top: 0; color: #297ea6;">@tarea.Titulo</h3>
                                         <p style="color: #666; font-size: 0.9em;">@tarea.Descripcion</p>
-                                        <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
-                                            <span style="background: #297ea6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
-                                                @tarea.Estado
-                                            </span>
+                                        <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <label style="font-size: 0.85em; color: #555; font-weight: bold;">Estado:</label>
+                                                <select class="estado-select" data-tarea-id="@tarea.Id" data-estado-actual="@tarea.Estado" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.85em; background: white; cursor: pointer;">
+                                                    <option value="pendiente" @(tarea.Estado?.ToLower() == "pendiente" ? "selected" : "")>Pendiente</option>
+                                                    <option value="en progreso" @(tarea.Estado?.ToLower() == "en progreso" ? "selected" : "")>En Progreso</option>
+                                                    <option value="completada" @(tarea.Estado?.ToLower() == "completada" ? "selected" : "")>Completada</option>
+                                                </select>
+                                            </div>
                                             <span style="font-size: 0.85em; color: #888;">
                                                 <i class="fa-solid fa-calendar"></i> 
                                                 Límite: @tarea.FechaLimite.ToString("dd/MM/yyyy")
@@ -234,6 +239,129 @@
     else
     {
         <div class="alert alert-warning">Rol no reconocido.</div>
+    }
+
+    @if (rol == "Estudiante")
+    {
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Manejar cambio de estado de tareas
+                const estadoSelects = document.querySelectorAll('.estado-select');
+                
+                estadoSelects.forEach(select => {
+                    select.addEventListener('change', function() {
+                        const tareaId = this.dataset.tareaId;
+                        const nuevoEstado = this.value;
+                        const estadoAnterior = this.dataset.estadoAnterior || this.options[this.selectedIndex - 1]?.value;
+                        
+                        // Confirmar cambio
+                        Swal.fire({
+                            title: '¿Actualizar estado?',
+                            text: `¿Cambiar el estado a "${nuevoEstado}"?`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#297ea6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Sí, actualizar',
+                            cancelButtonText: 'Cancelar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Deshabilitar el select mientras se procesa
+                                this.disabled = true;
+                                
+                                // Enviar petición al servidor
+                                fetch('/Tareas/ActualizarEstadoTarea', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        tareaId: parseInt(tareaId),
+                                        estado: nuevoEstado
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(resultado => {
+                                    if (resultado.ok) {
+                                        // Actualizar el badge de estado si existe
+                                        const taskCard = this.closest('.task-card');
+                                        const estadoBadge = taskCard.querySelector('.estado-badge');
+                                        if (estadoBadge) {
+                                            estadoBadge.textContent = nuevoEstado;
+                                        }
+                                        
+                                        // Actualizar colores según el estado
+                                        const colores = {
+                                            'pendiente': '#297ea6',
+                                            'en progreso': '#ff9800',
+                                            'completada': '#4caf50'
+                                        };
+                                        
+                                        this.style.background = colores[nuevoEstado.toLowerCase()] || '#297ea6';
+                                        this.style.color = 'white';
+                                        
+                                        Swal.fire({
+                                            title: '¡Actualizado!',
+                                            text: resultado.mensaje || 'Estado actualizado exitosamente',
+                                            icon: 'success',
+                                            timer: 2000,
+                                            showConfirmButton: false
+                                        });
+                                        
+                                        // Guardar el estado actual
+                                        this.dataset.estadoAnterior = nuevoEstado;
+                                    } else {
+                                        // Revertir el cambio
+                                        const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
+                                        this.value = estadoAnterior;
+                                        
+                                        Swal.fire({
+                                            title: 'Error',
+                                            text: resultado.mensaje || 'No se pudo actualizar el estado',
+                                            icon: 'error'
+                                        });
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    // Revertir el cambio
+                                    const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
+                                    this.value = estadoAnterior;
+                                    
+                                    Swal.fire({
+                                        title: 'Error',
+                                        text: 'Ocurrió un error al actualizar el estado',
+                                        icon: 'error'
+                                    });
+                                })
+                                .finally(() => {
+                                    // Rehabilitar el select
+                                    this.disabled = false;
+                                });
+                            } else {
+                                // Revertir el cambio si el usuario cancela
+                                const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
+                                this.value = estadoAnterior;
+                            }
+                        });
+                    });
+                    
+                    // Guardar el estado inicial
+                    select.dataset.estadoAnterior = select.value;
+                    
+                    // Aplicar colores según el estado inicial
+                    const estadoActual = select.value.toLowerCase();
+                    const colores = {
+                        'pendiente': '#297ea6',
+                        'en progreso': '#ff9800',
+                        'completada': '#4caf50'
+                    };
+                    select.style.background = colores[estadoActual] || '#297ea6';
+                    select.style.color = 'white';
+                });
+            });
+        </script>
     }
 </body>
 </html>
