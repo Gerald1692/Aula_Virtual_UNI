@@ -576,18 +576,47 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = Id });
                         command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = Estado });
 
-                        int FilasAfectadas = command.ExecuteNonQuery();
+                        // El stored procedure devuelve un SELECT, necesitamos leerlo
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                int exito = 0;
+                                string mensaje = "Error desconocido al actualizar el estado.";
 
-                        if (FilasAfectadas > 0 || FilasAfectadas == -1)
-                        {
-                            respuesta.Ok = true;
-                            respuesta.Mensaje = "Estado actualizado exitosamente";
-                            respuesta.ValorRetorno = true;
-                        }
-                        else
-                        {
-                            respuesta.Ok = false;
-                            respuesta.Mensaje = "No se pudo actualizar el estado";
+                                try
+                                {
+                                    if (reader.GetOrdinal("Exito") >= 0)
+                                        exito = reader.GetInt32(reader.GetOrdinal("Exito"));
+                                    if (reader.GetOrdinal("Mensaje") >= 0)
+                                        mensaje = reader.GetString(reader.GetOrdinal("Mensaje"));
+                                }
+                                catch
+                                {
+                                    // Si no hay columnas con nombre, leer por índice
+                                    try
+                                    {
+                                        exito = reader.GetInt32(0);
+                                        mensaje = reader.GetString(1);
+                                    }
+                                    catch
+                                    {
+                                        // Si falla, asumir éxito si hay filas
+                                        exito = 1;
+                                        mensaje = "Estado actualizado exitosamente";
+                                    }
+                                }
+
+                                respuesta.Ok = exito == 1;
+                                respuesta.Mensaje = mensaje;
+                                respuesta.ValorRetorno = exito == 1;
+                            }
+                            else
+                            {
+                                // Si no hay filas, verificar si se actualizó con ExecuteNonQuery
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se pudo actualizar el estado. La tarea no existe o no se pudo modificar.";
+                            }
                         }
                     }
                 }

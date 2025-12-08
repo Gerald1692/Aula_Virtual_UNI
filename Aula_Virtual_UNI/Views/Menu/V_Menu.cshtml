@@ -163,14 +163,12 @@
                                         <h3 style="margin-top: 0; color: #297ea6;">@tarea.Titulo</h3>
                                         <p style="color: #666; font-size: 0.9em;">@tarea.Descripcion</p>
                                         <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-                                            <div style="display: flex; align-items: center; gap: 8px;">
-                                                <label style="font-size: 0.85em; color: #555; font-weight: bold;">Estado:</label>
-                                                <select class="estado-select" data-tarea-id="@tarea.Id" data-estado-actual="@tarea.Estado" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.85em; background: white; cursor: pointer;">
-                                                    <option value="pendiente" @(tarea.Estado?.ToLower() == "pendiente" ? "selected" : "")>Pendiente</option>
-                                                    <option value="en progreso" @(tarea.Estado?.ToLower() == "en progreso" ? "selected" : "")>En Progreso</option>
-                                                    <option value="completada" @(tarea.Estado?.ToLower() == "completada" ? "selected" : "")>Completada</option>
-                                                </select>
-                                            </div>
+                                            <span class="task-status" style="background: #297ea6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.85em;">
+                                                @tarea.Estado
+                                            </span>
+                                            <button type="button" class="btn-action btn-status" data-tarea-id="@tarea.Id" data-estado="@tarea.Estado" style="padding: 4px 12px; border-radius: 6px; border: 1px solid #3a3d44; background: transparent; color: #e6e6e6; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                                <i class="fa-solid fa-flag"></i> Cambiar Estado
+                                            </button>
                                             <span style="font-size: 0.85em; color: #888;">
                                                 <i class="fa-solid fa-calendar"></i> 
                                                 Límite: @tarea.FechaLimite.ToString("dd/MM/yyyy")
@@ -246,119 +244,125 @@
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // Manejar cambio de estado de tareas
-                const estadoSelects = document.querySelectorAll('.estado-select');
+                // Función para normalizar el estado
+                function normalizeStatus(status) {
+                    if (!status) return 'pendiente';
+                    const normalized = status.toLowerCase().trim();
+                    if (normalized === 'en progreso' || normalized === 'en_progreso') return 'en progreso';
+                    if (normalized === 'completada' || normalized === 'completado') return 'completada';
+                    return 'pendiente';
+                }
+
+                // Función para aplicar estilos según el estado
+                function applyStatus(card, status) {
+                    const statusBadge = card.querySelector('.task-status');
+                    const btnStatus = card.querySelector('.btn-status');
+                    const normalizedStatus = normalizeStatus(status);
+
+                    // Actualizar badge de estado
+                    if (statusBadge) {
+                        statusBadge.textContent = normalizedStatus;
+                        statusBadge.className = 'task-status';
+                        if (normalizedStatus === 'pendiente') {
+                            statusBadge.style.background = '#1e7b3b';
+                            statusBadge.style.borderColor = '#27ae60';
+                            statusBadge.style.color = '#ecfdf3';
+                        } else if (normalizedStatus === 'en progreso') {
+                            statusBadge.style.background = '#7e5b00';
+                            statusBadge.style.borderColor = '#f1c40f';
+                            statusBadge.style.color = '#fff7d6';
+                        } else if (normalizedStatus === 'completada') {
+                            statusBadge.style.background = '#145a86';
+                            statusBadge.style.borderColor = '#3498db';
+                            statusBadge.style.color = '#e8f4ff';
+                        }
+                    }
+
+                    // Actualizar botón de estado
+                    if (btnStatus) {
+                        btnStatus.dataset.estado = normalizedStatus;
+                        if (normalizedStatus === 'pendiente') {
+                            btnStatus.style.borderColor = 'rgba(39, 174, 96, 0.75)';
+                            btnStatus.style.background = 'rgba(39, 174, 96, 0.12)';
+                            btnStatus.style.color = '#b9f6ca';
+                        } else if (normalizedStatus === 'en progreso') {
+                            btnStatus.style.borderColor = 'rgba(241, 196, 15, 0.85)';
+                            btnStatus.style.background = 'rgba(241, 196, 15, 0.12)';
+                            btnStatus.style.color = '#ffeaa7';
+                        } else if (normalizedStatus === 'completada') {
+                            btnStatus.style.borderColor = 'rgba(189, 195, 199, 0.8)';
+                            btnStatus.style.background = 'transparent';
+                            btnStatus.style.color = '#d0d3d4';
+                        }
+                    }
+                }
+
+                // Manejar clic en botones de estado
+                const statusButtons = document.querySelectorAll('.btn-status');
                 
-                estadoSelects.forEach(select => {
-                    select.addEventListener('change', function() {
-                        const tareaId = this.dataset.tareaId;
-                        const nuevoEstado = this.value;
-                        const estadoAnterior = this.dataset.estadoAnterior || this.options[this.selectedIndex - 1]?.value;
-                        
-                        // Confirmar cambio
-                        Swal.fire({
-                            title: '¿Actualizar estado?',
-                            text: `¿Cambiar el estado a "${nuevoEstado}"?`,
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonColor: '#297ea6',
-                            cancelButtonColor: '#d33',
-                            confirmButtonText: 'Sí, actualizar',
-                            cancelButtonText: 'Cancelar'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Deshabilitar el select mientras se procesa
-                                this.disabled = true;
-                                
-                                // Enviar petición al servidor
-                                fetch('/Tareas/ActualizarEstadoTarea', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        tareaId: parseInt(tareaId),
-                                        estado: nuevoEstado
-                                    })
-                                })
-                                .then(response => response.json())
-                                .then(resultado => {
-                                    if (resultado.ok) {
-                                        // Actualizar el badge de estado si existe
-                                        const taskCard = this.closest('.task-card');
-                                        const estadoBadge = taskCard.querySelector('.estado-badge');
-                                        if (estadoBadge) {
-                                            estadoBadge.textContent = nuevoEstado;
-                                        }
-                                        
-                                        // Actualizar colores según el estado
-                                        const colores = {
-                                            'pendiente': '#297ea6',
-                                            'en progreso': '#ff9800',
-                                            'completada': '#4caf50'
-                                        };
-                                        
-                                        this.style.background = colores[nuevoEstado.toLowerCase()] || '#297ea6';
-                                        this.style.color = 'white';
-                                        
-                                        Swal.fire({
-                                            title: '¡Actualizado!',
-                                            text: resultado.mensaje || 'Estado actualizado exitosamente',
-                                            icon: 'success',
-                                            timer: 2000,
-                                            showConfirmButton: false
-                                        });
-                                        
-                                        // Guardar el estado actual
-                                        this.dataset.estadoAnterior = nuevoEstado;
-                                    } else {
-                                        // Revertir el cambio
-                                        const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
-                                        this.value = estadoAnterior;
-                                        
-                                        Swal.fire({
-                                            title: 'Error',
-                                            text: resultado.mensaje || 'No se pudo actualizar el estado',
-                                            icon: 'error'
-                                        });
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    // Revertir el cambio
-                                    const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
-                                    this.value = estadoAnterior;
-                                    
-                                    Swal.fire({
-                                        title: 'Error',
-                                        text: 'Ocurrió un error al actualizar el estado',
-                                        icon: 'error'
-                                    });
-                                })
-                                .finally(() => {
-                                    // Rehabilitar el select
-                                    this.disabled = false;
-                                });
+                statusButtons.forEach(btn => {
+                    // Aplicar estilos iniciales
+                    const card = btn.closest('.task-card');
+                    const estadoActual = btn.dataset.estado || 'pendiente';
+                    applyStatus(card, estadoActual);
+
+                    btn.addEventListener('click', function() {
+                        const tareaId = parseInt(this.dataset.tareaId);
+                        const currentStatus = normalizeStatus(this.dataset.estado || 'pendiente');
+                        let newStatus;
+
+                        // Ciclar estados: pendiente -> en progreso -> completada -> pendiente
+                        if (currentStatus === 'pendiente') {
+                            newStatus = 'en progreso';
+                        } else if (currentStatus === 'en progreso') {
+                            newStatus = 'completada';
+                        } else {
+                            newStatus = 'pendiente';
+                        }
+
+                        // Deshabilitar botón mientras se procesa
+                        this.disabled = true;
+
+                        // Enviar petición al servidor
+                        fetch('/Tareas/ActualizarEstadoTarea', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                tareaId: tareaId,
+                                estado: newStatus
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(resultado => {
+                            if (resultado.ok) {
+                                // Actualizar el estado en el DOM
+                                const card = this.closest('.task-card');
+                                card.setAttribute('data-estado', newStatus);
+                                this.dataset.estado = newStatus;
+                                applyStatus(card, newStatus);
                             } else {
-                                // Revertir el cambio si el usuario cancela
-                                const estadoAnterior = this.dataset.estadoAnterior || 'pendiente';
-                                this.value = estadoAnterior;
+                                Swal.fire({
+                                    title: "Error",
+                                    text: resultado.mensaje || "No se pudo actualizar el estado",
+                                    icon: "error"
+                                });
                             }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: "Error",
+                                text: "Ocurrió un error al actualizar el estado",
+                                icon: "error"
+                            });
+                        })
+                        .finally(() => {
+                            // Rehabilitar botón
+                            this.disabled = false;
                         });
                     });
-                    
-                    // Guardar el estado inicial
-                    select.dataset.estadoAnterior = select.value;
-                    
-                    // Aplicar colores según el estado inicial
-                    const estadoActual = select.value.toLowerCase();
-                    const colores = {
-                        'pendiente': '#297ea6',
-                        'en progreso': '#ff9800',
-                        'completada': '#4caf50'
-                    };
-                    select.style.background = colores[estadoActual] || '#297ea6';
-                    select.style.color = 'white';
                 });
             });
         </script>

@@ -356,31 +356,6 @@ namespace Aula_Virtual_UNI.Controllers
             return reply;
         }
 
-        [HttpPost]
-        public Respuesta<bool> ActualizarEstadoTarea([FromBody] Tarea Tarea)
-        {
-            Respuesta<bool> reply = new Respuesta<bool>();
-
-            try
-            {
-                var conexion = _configuration.GetConnectionString("ConexionDB");
-                // Usamos Tarea.Id y Tarea.Estado del objeto recibido
-                var respuesta = AccesoDAL.ActualizarEstadoTarea(Tarea.Id, Tarea.Estado, conexion);
-
-                if (respuesta != null)
-                {
-                    reply = respuesta;
-                }
-            }
-            catch (Exception ex)
-            {
-                reply.Ok = false;
-                reply.Mensaje = $"Ha ocurrido un error en la capa del controlador en el método ActualizarEstadoTarea {ex.Message}";
-            }
-
-            return reply;
-        }
-
         [HttpGet]
         public Respuesta<List<Usuario>> ObtenerEstudiantesTarea(int tareaId)
         {
@@ -430,7 +405,7 @@ namespace Aula_Virtual_UNI.Controllers
         }
 
         [HttpPost]
-        public Respuesta<bool> ActualizarEstadoTarea([FromBody] dynamic data)
+        public Respuesta<bool> ActualizarEstadoTarea([FromBody] System.Text.Json.JsonElement data)
         {
             Respuesta<bool> reply = new Respuesta<bool>();
 
@@ -449,8 +424,33 @@ namespace Aula_Virtual_UNI.Controllers
                     return reply;
                 }
 
-                int tareaId = Convert.ToInt32(data.tareaId ?? data.TareaId);
-                string nuevoEstado = (string)(data.estado ?? data.Estado);
+                // Obtener los valores del JsonElement
+                int tareaId = 0;
+                string nuevoEstado = string.Empty;
+
+                // Intentar obtener tareaId de diferentes formas
+                if (data.TryGetProperty("tareaId", out var tareaIdProp))
+                    tareaId = tareaIdProp.GetInt32();
+                else if (data.TryGetProperty("TareaId", out var TareaIdProp))
+                    tareaId = TareaIdProp.GetInt32();
+                else if (data.TryGetProperty("id", out var idProp))
+                    tareaId = idProp.GetInt32();
+                else if (data.TryGetProperty("Id", out var IdProp))
+                    tareaId = IdProp.GetInt32();
+
+                // Intentar obtener estado de diferentes formas
+                if (data.TryGetProperty("estado", out var estadoProp))
+                    nuevoEstado = estadoProp.GetString() ?? string.Empty;
+                else if (data.TryGetProperty("Estado", out var EstadoProp))
+                    nuevoEstado = EstadoProp.GetString() ?? string.Empty;
+
+                // Validar que tengamos los valores necesarios
+                if (tareaId <= 0 || string.IsNullOrEmpty(nuevoEstado))
+                {
+                    reply.Ok = false;
+                    reply.Mensaje = "Datos inválidos. Se requiere tareaId y estado.";
+                    return reply;
+                }
 
                 // Validar estados permitidos
                 string[] estadosValidos = { "pendiente", "en progreso", "completada" };

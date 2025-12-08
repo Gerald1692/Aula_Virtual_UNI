@@ -194,14 +194,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Agregar estudiantes asignados (puede ser uno o varios)
         if (estudiantesSeleccionados.length > 0) {
-            // Si solo hay uno, mantener compatibilidad con el campo existente
-            if (estudiantesSeleccionados.length === 1) {
-                data.estudianteAsignadoId = parseInt(estudiantesSeleccionados[0]);
-            } else {
-                // Si hay múltiples, usar el primero como principal y agregar lista
-                data.estudianteAsignadoId = parseInt(estudiantesSeleccionados[0]);
-                data.estudiantesAsignadosIds = estudiantesSeleccionados.map(id => parseInt(id));
-            }
+            // Siempre enviar la lista de estudiantes asignados
+            data.estudiantesAsignadosIds = estudiantesSeleccionados.map(id => parseInt(id));
+            // También mantener el primero para compatibilidad con el campo existente
+            data.estudianteAsignadoId = parseInt(estudiantesSeleccionados[0]);
         }
 
         // Datos adicionales para la UI
