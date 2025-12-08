@@ -75,7 +75,7 @@ namespace Aula_Virtual_UNI.Controllers
                 Proyecto.curso = proyectoData.curso;
                 Proyecto.estado = proyectoData.estado ?? "pendiente";
                 Proyecto.id_profesor = Convert.ToInt32(IdUsuario);
-                Proyecto.id_asignado = proyectoData.id_asignado;
+                Proyecto.id_asignado = string.Join(",", proyectoData.id_asignado);
                 
                 // Mapear la fecha: si viene como "fecha", usarla para fecha_finalizacion y establecer fecha_inicio como hoy
                 if (!string.IsNullOrEmpty(proyectoData.fecha))
@@ -226,6 +226,6 @@ namespace Aula_Virtual_UNI.Controllers
         public string? descripcion { get; set; }
         public string? fecha { get; set; }
         public string? estado { get; set; }
-        public int? id_asignado { get; set; }
+        public List<string>? id_asignado { get; set; }
     }
 }

@@ -321,7 +321,7 @@
             descripcion: inputs.descripcion.value.trim(),
             fecha: inputs.fecha.value,
             estado: editingCard ? editingCard.dataset.estado : 'pendiente',
-            id_asignado: inputs.estudiante.value ? parseInt(inputs.estudiante.value) : null,
+            id_asignado: $('#estudianteSelect').val(),
             nombreAsignado: estudianteNombre
         };
 
@@ -405,4 +405,6 @@
     // ========== INICIALIZACIÓN ==========
     initializeExistingCards();
     ensureEmptyState();
+
+
 });

@@ -1,4 +1,4 @@
-﻿using Entities;
+﻿ using Entities;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ namespace AulaVirtualDAL
                         command.Parameters.Add(new SqlParameter("@pIdProfesor", SqlDbType.Int) { Value = (object)Proyecto.id_profesor ?? DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@pCurso", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.curso ?? DBNull.Value });
                         command.Parameters.Add(new SqlParameter("@pEstado", SqlDbType.NVarChar, 50) { Value = (object)Proyecto.estado ?? DBNull.Value });
-                        command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.Int) { Value = (object)Proyecto.id_asignado ?? DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.NVarChar, 200) { Value = (object)Proyecto.id_asignado ?? DBNull.Value });
 
                         object result = command.ExecuteScalar();
 
