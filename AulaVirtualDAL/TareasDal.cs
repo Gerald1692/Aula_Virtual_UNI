@@ -1,106 +1,780 @@
 using Entities;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AulaVirtualDAL
 {
-    public class TareasDal
+    public class TareasDAL
     {
-        private readonly string _connectionString;
 
-        public TareasDal(string connectionString)
+        public Respuesta<Tarea> InsertarTarea(Tarea Tarea, string Conexion)
         {
-            _connectionString = connectionString;
-        }
+            Respuesta<Tarea> respuesta = new Respuesta<Tarea>();
 
-        public async Task<IEnumerable<Tarea>> ObtenerTareasAsync()
-        {
-            var tareas = new List<Tarea>();
-
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "SELECT Id, Nombre, Curso, FechaEntrega, Descripcion, Estado FROM Tareas ORDER BY FechaEntrega DESC",
-                connection);
-
-            await using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                tareas.Add(new Tarea
+                using (SqlConnection connection = new SqlConnection(Conexion))
                 {
-                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                    Curso = reader.GetString(reader.GetOrdinal("Curso")),
-                    FechaEntrega = reader.GetDateTime(reader.GetOrdinal("FechaEntrega")),
-                    Descripcion = reader.GetString(reader.GetOrdinal("Descripcion")),
-                    Estado = reader.GetString(reader.GetOrdinal("Estado"))
-                });
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("InsertarTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@Titulo", SqlDbType.NVarChar, 50) { Value = Tarea.Titulo });
+                        command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, 250) { Value = Tarea.Descripcion });
+                        command.Parameters.Add(new SqlParameter("@ProyectoId", SqlDbType.Int) { Value = Tarea.ProyectoId });
+                        command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.Int) { Value = Tarea.EstudianteAsignadoId ?? 0 });
+                        command.Parameters.Add(new SqlParameter("@IdCreador", SqlDbType.Int) { Value = Tarea.IdCreador ?? (object)DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@FechaInicio", SqlDbType.Date) { Value = Tarea.FechaInicio.HasValue ? (object)Tarea.FechaInicio.Value : DBNull.Value });
+                        command.Parameters.Add(new SqlParameter("@FechaLimite", SqlDbType.Date) { Value = Tarea.FechaLimite });
+                        command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = Tarea.Estado });
+
+
+                        object result = command.ExecuteScalar();
+
+                        if (result != null && int.TryParse(result.ToString(), out int newId))
+                        {
+                            Tarea.Id = newId;
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = $"La tarea ha sido agregada de manera exitosa";
+                            respuesta.ValorRetorno = Tarea;
+                        }
+                        else
+                        {
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "Ha ocurrido un error a la hora de agregar la tarea";
+                        }
+
+
+                    }
+                }
             }
-
-            return tareas;
-        }
-
-        public async Task<Tarea> CrearTareaAsync(Tarea tarea)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "INSERT INTO Tareas (Nombre, Curso, FechaEntrega, Descripcion, Estado) OUTPUT INSERTED.Id VALUES (@Nombre, @Curso, @FechaEntrega, @Descripcion, @Estado)",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = tarea.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = tarea.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = tarea.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = tarea.Descripcion });
-            command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = tarea.Estado });
-
-            var newId = (int)await command.ExecuteScalarAsync();
-            tarea.Id = newId;
-
-            return tarea;
-        }
-
-        public async Task<Tarea?> ActualizarTareaAsync(int id, Tarea tarea)
-        {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            await using var command = new SqlCommand(
-                "UPDATE Tareas SET Nombre = @Nombre, Curso = @Curso, FechaEntrega = @FechaEntrega, Descripcion = @Descripcion, Estado = @Estado WHERE Id = @Id",
-                connection);
-
-            command.Parameters.Add(new SqlParameter("@Nombre", SqlDbType.NVarChar, 200) { Value = tarea.Nombre });
-            command.Parameters.Add(new SqlParameter("@Curso", SqlDbType.NVarChar, 100) { Value = tarea.Curso });
-            command.Parameters.Add(new SqlParameter("@FechaEntrega", SqlDbType.Date) { Value = tarea.FechaEntrega });
-            command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, -1) { Value = tarea.Descripcion });
-            command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = tarea.Estado });
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
-
-            var affected = await command.ExecuteNonQueryAsync();
-            if (affected == 0)
+            catch (Exception ex)
             {
-                return null;
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
             }
 
-            tarea.Id = id;
-            return tarea;
+            return respuesta;
         }
 
-        public async Task<bool> EliminarTareaAsync(int id)
+        public Respuesta<List<Tarea>> ObtenerTareasPorEstudiante(int EstudianteId, string Conexion)
         {
-            await using var connection = new SqlConnection(_connectionString);
-            await connection.OpenAsync();
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
 
-            await using var command = new SqlCommand(
-                "DELETE FROM Tareas WHERE Id = @Id",
-                connection);
+                    string query = @"
+                        SELECT DISTINCT
+                            t.id_tarea AS Id,
+                            t.titulo AS Titulo,
+                            t.descripcion AS Descripcion,
+                            t.id_proyecto AS ProyectoId,
+                            t.id_asignado AS EstudianteAsignadoId,
+                            t.fecha_inicio AS FechaInicio,
+                            t.fecha_limite AS FechaLimite,
+                            t.estado AS Estado,
+                            p.curso AS Curso,
+                            CONCAT(u.nombre, ' ', u.apellido1, ' ', ISNULL(u.apellido2, '')) AS NombreAsignado
+                        FROM dbo.tareas t
+                        INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
+                        LEFT JOIN dbo.usuarios u ON t.id_asignado = u.id_usuario
+                        WHERE t.id_asignado = @EstudianteId
+                           OR EXISTS (
+                               SELECT 1 
+                               FROM dbo.tarea_estudiante te 
+                               WHERE te.id_tarea = t.id_tarea 
+                                 AND te.id_estudiante = @EstudianteId
+                           )
+                        ORDER BY t.fecha_limite DESC";
 
-            command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = id });
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
 
-            var affected = await command.ExecuteNonQueryAsync();
-            return affected > 0;
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Tarea Tarea = new Tarea
+                                {
+                                    Id = reader.IsDBNull("Id") ? 0 : reader.GetInt32("Id"),
+                                    Titulo = reader.IsDBNull("Titulo") ? string.Empty : reader.GetString("Titulo"),
+                                    Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
+                                    ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
+                                    EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
+                                    FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
+                                    FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
+                                    Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
+                                    NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
+                                    Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
+                                    EstudiantesAsignados = new List<Usuario>()
+                                };
+
+                                ListaTareas.Add(Tarea);
+                            }
+                        }
+
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Tarea>> ObtenerTodasLasTareasDeProyectosDelEstudiante(int EstudianteId, string Conexion)
+        {
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Obtener TODAS las tareas de los proyectos donde el estudiante está asignado
+                    string query = @"
+                        SELECT DISTINCT
+                            t.id_tarea AS Id,
+                            t.titulo AS Titulo,
+                            t.descripcion AS Descripcion,
+                            t.id_proyecto AS ProyectoId,
+                            t.id_asignado AS EstudianteAsignadoId,
+                            t.id_creador AS IdCreador,
+                            t.fecha_inicio AS FechaInicio,
+                            t.fecha_limite AS FechaLimite,
+                            t.estado AS Estado,
+                            p.curso AS Curso,
+                            CONCAT(u_asignado.nombre, ' ', u_asignado.apellido1, ' ', ISNULL(u_asignado.apellido2, '')) AS NombreAsignado,
+                            CONCAT(u_creador.nombre, ' ', u_creador.apellido1, ' ', ISNULL(u_creador.apellido2, '')) AS NombreCreador
+                        FROM dbo.tareas t
+                        INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
+                        INNER JOIN dbo.proyecto_estudiante pe ON p.id_proyecto = pe.id_proyecto
+                        LEFT JOIN dbo.usuarios u_asignado ON t.id_asignado = u_asignado.id_usuario
+                        LEFT JOIN dbo.usuarios u_creador ON t.id_creador = u_creador.id_usuario
+                        WHERE pe.id_estudiante = @EstudianteId
+                        ORDER BY t.fecha_limite DESC";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Tarea Tarea = new Tarea
+                                {
+                                    Id = reader.IsDBNull("Id") ? 0 : reader.GetInt32("Id"),
+                                    Titulo = reader.IsDBNull("Titulo") ? string.Empty : reader.GetString("Titulo"),
+                                    Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
+                                    ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
+                                    EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
+                                    FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
+                                    FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
+                                    Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
+                                    NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
+                                    Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
+                                    EstudiantesAsignados = new List<Usuario>()
+                                };
+
+                                ListaTareas.Add(Tarea);
+                            }
+                        }
+
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Tarea>> ObtenerTareasCreadasPorEstudiante(int EstudianteId, string Conexion)
+        {
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Obtener solo las tareas creadas por el estudiante (id_creador = EstudianteId)
+                    string query = @"
+                        SELECT 
+                            t.id_tarea AS Id,
+                            t.titulo AS Titulo,
+                            t.descripcion AS Descripcion,
+                            t.id_proyecto AS ProyectoId,
+                            t.id_asignado AS EstudianteAsignadoId,
+                            t.id_creador AS IdCreador,
+                            t.fecha_inicio AS FechaInicio,
+                            t.fecha_limite AS FechaLimite,
+                            t.estado AS Estado,
+                            p.curso AS Curso,
+                            CONCAT(u_asignado.nombre, ' ', u_asignado.apellido1, ' ', ISNULL(u_asignado.apellido2, '')) AS NombreAsignado,
+                            CONCAT(u_creador.nombre, ' ', u_creador.apellido1, ' ', ISNULL(u_creador.apellido2, '')) AS NombreCreador
+                        FROM dbo.tareas t
+                        INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
+                        LEFT JOIN dbo.usuarios u_asignado ON t.id_asignado = u_asignado.id_usuario
+                        LEFT JOIN dbo.usuarios u_creador ON t.id_creador = u_creador.id_usuario
+                        WHERE t.id_creador = @EstudianteId
+                        ORDER BY t.fecha_limite DESC";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Tarea Tarea = new Tarea
+                                {
+                                    Id = reader.IsDBNull("Id") ? 0 : reader.GetInt32("Id"),
+                                    Titulo = reader.IsDBNull("Titulo") ? string.Empty : reader.GetString("Titulo"),
+                                    Descripcion = reader.IsDBNull("Descripcion") ? string.Empty : reader.GetString("Descripcion"),
+                                    ProyectoId = reader.IsDBNull("ProyectoId") ? 0 : reader.GetInt32("ProyectoId"),
+                                    EstudianteAsignadoId = reader.IsDBNull("EstudianteAsignadoId") ? null : reader.GetInt32("EstudianteAsignadoId"),
+                                    IdCreador = reader.IsDBNull("IdCreador") ? null : reader.GetInt32("IdCreador"),
+                                    FechaInicio = reader.IsDBNull("FechaInicio") ? null : (DateTime?)reader.GetDateTime("FechaInicio"),
+                                    FechaLimite = reader.IsDBNull("FechaLimite") ? DateTime.MinValue : reader.GetDateTime("FechaLimite"),
+                                    Estado = reader.IsDBNull("Estado") ? "pendiente" : reader.GetString("Estado"),
+                                    NombreAsignado = reader.IsDBNull("NombreAsignado") ? null : reader.GetString("NombreAsignado"),
+                                    NombreCreador = reader.IsDBNull("NombreCreador") ? null : reader.GetString("NombreCreador"),
+                                    Curso = reader.IsDBNull("Curso") ? null : reader.GetString("Curso"),
+                                    EstudiantesAsignados = new List<Usuario>()
+                                };
+
+                                ListaTareas.Add(Tarea);
+                            }
+                        }
+
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Tarea>> ObtenerTareas(string Conexion)
+        {
+            Respuesta<List<Tarea>> respuesta = new Respuesta<List<Tarea>>();
+            List<Tarea> ListaTareas = new List<Tarea>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ObtenerTareas", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Tarea Tarea = new Tarea
+                                {
+                                    Id = (int)reader["Id"],
+                                    Titulo = (string)reader["Titulo"],
+                                    Descripcion = (string)reader["Descripcion"],
+                                    ProyectoId = (int)reader["ProyectoId"],
+                                    EstudianteAsignadoId = reader["EstudianteAsignadoId"] != DBNull.Value ? (int)reader["EstudianteAsignadoId"] : null,
+                                    FechaInicio = reader["FechaInicio"] != DBNull.Value ? (DateTime?)reader["FechaInicio"] : null,
+                                    FechaLimite = (DateTime)reader["FechaLimite"],
+                                    Estado = (string)reader["Estado"],
+                                    NombreAsignado = reader["NombreAsignado"] != DBNull.Value ? (string)reader["NombreAsignado"] : null,
+                                    Curso = (string)reader["Curso"],
+                                    EstudiantesAsignados = new List<Usuario>()
+                                };
+
+                                ListaTareas.Add(Tarea);
+                            }
+                        }
+
+                        // Obtener todos los estudiantes asignados para cada tarea
+                        foreach (var tarea in ListaTareas)
+                        {
+                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            {
+                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                                
+                                // Actualizar NombreAsignado con todos los estudiantes si hay múltiples
+                                if (tarea.EstudiantesAsignados.Count > 1)
+                                {
+                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                                }
+                                else if (tarea.EstudiantesAsignados.Count == 1)
+                                {
+                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
+                                }
+                            }
+                        }
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                        respuesta.ValorRetorno = ListaTareas;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<List<Usuario>> ObtenerEstudiantesPorTarea(int TareaId, string Conexion)
+        {
+            Respuesta<List<Usuario>> respuesta = new Respuesta<List<Usuario>>();
+            List<Usuario> ListaEstudiantes = new List<Usuario>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ObtenerEstudiantesPorTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                Usuario estudiante = new Usuario
+                                {
+                                    Id = (int)reader["Id"],
+                                    NombreCompleto = (string)reader["NombreCompleto"],
+                                    Cedula = reader["Matricula"] != DBNull.Value ? (string)reader["Matricula"] : string.Empty,
+                                    Email = reader["Email"] != DBNull.Value ? (string)reader["Email"] : string.Empty
+                                };
+
+                                ListaEstudiantes.Add(estudiante);
+                            }
+
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Estudiantes obtenidos exitosamente";
+                            respuesta.ValorRetorno = ListaEstudiantes;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+
+
+        public Respuesta<bool> ActualizarTarea(Tarea Tarea, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ActualizarTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = Tarea.Id });
+                        command.Parameters.Add(new SqlParameter("@Titulo", SqlDbType.NVarChar, 50) { Value = Tarea.Titulo });
+                        command.Parameters.Add(new SqlParameter("@Descripcion", SqlDbType.NVarChar, 250) { Value = Tarea.Descripcion });
+                        command.Parameters.Add(new SqlParameter("@FechaLimite", SqlDbType.Date) { Value = Tarea.FechaLimite });
+                        command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = Tarea.Estado });
+                        command.Parameters.Add(new SqlParameter("@EstudianteAsignadoId", SqlDbType.Int) { Value = Tarea.EstudianteAsignadoId ?? (object)DBNull.Value });
+
+                        int FilasAfectadas = command.ExecuteNonQuery();
+
+                        if (FilasAfectadas > 0 || FilasAfectadas == -1)
+                        {
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Tarea actualizada exitosamente";
+                            respuesta.ValorRetorno = true;
+                        }
+                        else
+                        {
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "No se pudo actualizar la tarea";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> EliminarTarea(int Id, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("EliminarTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = Id });
+
+                        int FilasAfectadas = command.ExecuteNonQuery();
+
+                        if (FilasAfectadas > 0 || FilasAfectadas == -1)
+                        {
+                            respuesta.Ok = true;
+                            respuesta.Mensaje = "Tarea eliminada exitosamente";
+                            respuesta.ValorRetorno = true;
+                        }
+                        else
+                        {
+                            respuesta.Ok = false;
+                            respuesta.Mensaje = "No se pudo eliminar la tarea";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> ActualizarEstadoTarea(int Id, string Estado, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("ActualizarEstadoTarea", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add(new SqlParameter("@Id", SqlDbType.Int) { Value = Id });
+                        command.Parameters.Add(new SqlParameter("@Estado", SqlDbType.NVarChar, 20) { Value = Estado });
+
+                        // El stored procedure devuelve un SELECT, necesitamos leerlo
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                int exito = 0;
+                                string mensaje = "Error desconocido al actualizar el estado.";
+
+                                try
+                                {
+                                    if (reader.GetOrdinal("Exito") >= 0)
+                                        exito = reader.GetInt32(reader.GetOrdinal("Exito"));
+                                    if (reader.GetOrdinal("Mensaje") >= 0)
+                                        mensaje = reader.GetString(reader.GetOrdinal("Mensaje"));
+                                }
+                                catch
+                                {
+                                    // Si no hay columnas con nombre, leer por índice
+                                    try
+                                    {
+                                        exito = reader.GetInt32(0);
+                                        mensaje = reader.GetString(1);
+                                    }
+                                    catch
+                                    {
+                                        // Si falla, asumir éxito si hay filas
+                                        exito = 1;
+                                        mensaje = "Estado actualizado exitosamente";
+                                    }
+                                }
+
+                                respuesta.Ok = exito == 1;
+                                respuesta.Mensaje = mensaje;
+                                respuesta.ValorRetorno = exito == 1;
+                            }
+                            else
+                            {
+                                // Si no hay filas, verificar si se actualizó con ExecuteNonQuery
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se pudo actualizar el estado. La tarea no existe o no se pudo modificar.";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> VerificarEstudianteAsignadoATarea(int TareaId, int EstudianteId, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT COUNT(*) 
+                        FROM dbo.tareas t
+                        WHERE t.id_tarea = @TareaId
+                          AND (
+                              t.id_asignado = @EstudianteId
+                              OR EXISTS (
+                                  SELECT 1 
+                                  FROM dbo.tarea_estudiante te 
+                                  WHERE te.id_tarea = @TareaId 
+                                    AND te.id_estudiante = @EstudianteId
+                              )
+                          )";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+                        command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = EstudianteId });
+
+                        int count = Convert.ToInt32(command.ExecuteScalar());
+
+                        respuesta.Ok = true;
+                        respuesta.ValorRetorno = count > 0;
+                        respuesta.Mensaje = count > 0 ? "El estudiante está asignado a la tarea" : "El estudiante no está asignado a la tarea";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> AsignarEstudiantesATarea(int TareaId, List<int> EstudianteIds, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                if (EstudianteIds == null || EstudianteIds.Count == 0)
+                {
+                    respuesta.Ok = false;
+                    respuesta.Mensaje = "Debe seleccionar al menos un estudiante";
+                    return respuesta;
+                }
+
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    int asignacionesExitosas = 0;
+                    int asignacionesDuplicadas = 0;
+
+                    foreach (int estudianteId in EstudianteIds)
+                    {
+                        using (SqlCommand command = new SqlCommand("AsignarEstudianteATarea", connection))
+                        {
+                            command.CommandType = CommandType.StoredProcedure;
+                            command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+                            command.Parameters.Add(new SqlParameter("@EstudianteId", SqlDbType.Int) { Value = estudianteId });
+
+                            try
+                            {
+                                command.ExecuteNonQuery();
+                                asignacionesExitosas++;
+                            }
+                            catch (SqlException sqlEx)
+                            {
+                                // Si es un error de duplicado, lo ignoramos
+                                if (sqlEx.Number == 2627 || sqlEx.Number == 2601) // Violación de clave única
+                                {
+                                    asignacionesDuplicadas++;
+                                }
+                                else
+                                {
+                                    throw;
+                                }
+                            }
+                        }
+                    }
+
+                    respuesta.Ok = true;
+                    if (asignacionesDuplicadas > 0)
+                    {
+                        respuesta.Mensaje = $"Se asignaron {asignacionesExitosas} estudiante(s). {asignacionesDuplicadas} ya estaban asignados.";
+                    }
+                    else
+                    {
+                        respuesta.Mensaje = $"Se asignaron {asignacionesExitosas} estudiante(s) exitosamente";
+                    }
+                    respuesta.ValorRetorno = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<bool> EliminarAsignacionesEstudiantes(int TareaId, string Conexion)
+        {
+            Respuesta<bool> respuesta = new Respuesta<bool>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand("EliminarAsignacionesEstudiantes", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@TareaId", SqlDbType.Int) { Value = TareaId });
+
+                        command.ExecuteNonQuery();
+
+                        respuesta.Ok = true;
+                        respuesta.Mensaje = "Asignaciones eliminadas exitosamente";
+                        respuesta.ValorRetorno = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
         }
     }
 }

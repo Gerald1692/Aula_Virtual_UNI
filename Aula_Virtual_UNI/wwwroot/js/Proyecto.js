@@ -2,6 +2,7 @@
     const form = document.querySelector('.project-form');
     const list = document.getElementById('projectList');
     const submitLabel = form?.querySelector('.btn-create span.label-text');
+    const template = document.getElementById('project-card-template');
     let editingCard = null;
 
     const STATUS_LABELS = {
@@ -10,7 +11,7 @@
         en_progreso: 'En Progreso'
     };
 
-    if (!form || !list) {
+    if (!form || !list || !template) {
         return;
     }
 
@@ -18,9 +19,11 @@
         nombre: form.elements['nombre'],
         curso: form.elements['curso'],
         descripcion: form.elements['descripcion'],
-        fecha: form.elements['fecha']
+        fecha: form.elements['fecha'],
+        estudiante: form.elements['estudiante']
     };
 
+    // ========== UTILIDADES ==========
     function formatDate(value) {
         const date = new Date(value + 'T00:00:00');
         if (isNaN(date)) {
@@ -71,12 +74,17 @@
     }
 
     function ensureEmptyState() {
-        if (list.children.length === 0 && !document.getElementById('emptyState')) {
+        const emptyState = document.getElementById('emptyState');
+        const hasCards = list.querySelector('.project-card');
+
+        if (!hasCards && !emptyState) {
             const message = document.createElement('p');
             message.className = 'empty-state';
             message.id = 'emptyState';
             message.textContent = 'Aún no hay proyectos creados.';
             list.appendChild(message);
+        } else if (hasCards && emptyState) {
+            emptyState.remove();
         }
     }
 
@@ -94,6 +102,9 @@
         inputs.curso.value = card.dataset.curso || '';
         inputs.descripcion.value = card.dataset.descripcion || '';
         inputs.fecha.value = card.dataset.fecha || '';
+        if (inputs.estudiante) {
+            inputs.estudiante.value = card.dataset.estudianteId || '';
+        }
         editingCard = card;
         form.dataset.editing = 'true';
         if (submitLabel) {
@@ -101,69 +112,93 @@
         }
     }
 
-    function createCardElements(data) {
+    // ========== CREAR TARJETA DESDE TEMPLATE ==========
+    function createCardFromTemplate(data) {
         const normalizedEstado = normalizeStatus(data.estado || 'pendiente');
 
-        const card = document.createElement('article');
-        card.className = 'project-card';
+        // Clonar el template
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector('.project-card');
+
+        // Establecer data attributes
+        if (data.id_proyecto) {
+            card.dataset.id = data.id_proyecto;
+        }
         card.dataset.nombre = data.nombre;
         card.dataset.curso = data.curso;
         card.dataset.descripcion = data.descripcion;
         card.dataset.fecha = data.fecha;
         card.dataset.estado = normalizedEstado;
+        card.dataset.nombreasignado = data.nombreAsignado || "";
 
-        const header = document.createElement('div');
-        header.className = 'project-card-header';
+        // Llenar contenido
+        card.querySelector('.project-title').textContent = data.nombre;
+        card.querySelector('.project-date').textContent = formatDate(data.fecha);
+        card.querySelector('.course-text').textContent = data.curso;
+        card.querySelector('.project-description').textContent = data.descripcion;
 
-        const title = document.createElement('h3');
-        title.className = 'project-title';
-        title.textContent = data.nombre;
+        // Mostrar estudiante asignado si existe
+        const assignedSection = card.querySelector('.project-assigned');
+        const assignedText = card.querySelector('.assigned-text');
+        if (assignedSection && assignedText) {
+            if (data.nombreAsignado && data.nombreAsignado.trim() !== '') {
+                assignedText.textContent = data.nombreAsignado;
+                assignedSection.style.display = 'block';
+            } else {
+                assignedSection.style.display = 'none';
+            }
+        }
 
-        const meta = document.createElement('div');
-        meta.className = 'task-meta';
+        // Aplicar estado
+        applyStatus(card, normalizedEstado);
 
-        const statusBadge = document.createElement('span');
-        statusBadge.className = 'task-status';
+        // Agregar event listeners
+        attachCardEvents(card);
 
-        const date = document.createElement('span');
-        date.className = 'project-date';
-        date.textContent = formatDate(data.fecha);
+        return card;
+    }
 
-        meta.appendChild(statusBadge);
-        meta.appendChild(date);
+    function updateCard(card, data) {
+        card.dataset.nombre = data.nombre;
+        card.dataset.curso = data.curso;
+        card.dataset.descripcion = data.descripcion;
+        card.dataset.fecha = data.fecha;
+        if (data.nombreAsignado !== undefined) {
+            card.dataset.nombreasignado = data.nombreAsignado || "";
+        }
 
-        header.appendChild(title);
-        header.appendChild(meta);
+        card.querySelector('.project-title').textContent = data.nombre;
+        card.querySelector('.project-date').textContent = formatDate(data.fecha);
+        card.querySelector('.course-text').textContent = data.curso;
+        card.querySelector('.project-description').textContent = data.descripcion;
 
-        const course = document.createElement('p');
-        course.className = 'project-course';
-        const courseIcon = document.createElement('i');
-        courseIcon.className = 'fa-solid fa-graduation-cap';
-        course.appendChild(courseIcon);
-        const courseText = document.createElement('span');
-        courseText.className = 'course-text';
-        courseText.textContent = data.curso;
-        course.appendChild(courseText);
+        // Actualizar estudiante asignado si existe
+        const assignedSection = card.querySelector('.project-assigned');
+        const assignedText = card.querySelector('.assigned-text');
+        if (assignedSection && assignedText) {
+            const nombreAsignado = data.nombreAsignado || card.dataset.nombreasignado || "";
+            if (nombreAsignado.trim() !== '') {
+                assignedText.textContent = nombreAsignado;
+                assignedSection.style.display = 'block';
+            } else {
+                assignedSection.style.display = 'none';
+            }
+        }
 
-        const description = document.createElement('p');
-        description.className = 'project-description';
-        description.textContent = data.descripcion;
+        applyStatus(card, card.dataset.estado || 'pendiente');
+    }
 
-        const actions = document.createElement('div');
-        actions.className = 'project-card-actions';
-
-        const editButton = document.createElement('button');
-        editButton.type = 'button';
-        editButton.className = 'btn-action btn-edit';
-        editButton.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar';
-        editButton.addEventListener('click', function () {
+    // ========== EVENT LISTENERS PARA TARJETAS ==========
+    function attachCardEvents(card) {
+        // Botón Editar
+        const editBtn = card.querySelector('.btn-edit');
+        editBtn.addEventListener('click', function () {
             populateForm(card);
         });
 
-        const statusButton = document.createElement('button');
-        statusButton.type = 'button';
-        statusButton.className = 'btn-action btn-status';
-        statusButton.addEventListener('click', function () {
+        // Botón Estado
+        const statusBtn = card.querySelector('.btn-status');
+        statusBtn.addEventListener('click', function () {
             let nextState;
             switch (card.dataset.estado) {
                 case 'pendiente':
@@ -181,58 +216,120 @@
             }
         });
 
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.className = 'btn-action btn-delete';
-        deleteButton.innerHTML = '<i class="fa-solid fa-trash"></i> Eliminar';
-        deleteButton.addEventListener('click', function () {
-            if (editingCard === card) {
-                clearForm();
+        // Botón Eliminar
+        const deleteBtn = card.querySelector('.btn-delete');
+        deleteBtn.addEventListener('click', function () {
+            const projectId = card.dataset.id;
+
+            if (!projectId) {
+                // Si no hay ID, solo eliminar del DOM (proyecto nuevo no guardado)
+                if (editingCard === card) {
+                    clearForm();
+                }
+                card.remove();
+                ensureEmptyState();
+                return;
             }
-            card.remove();
-            ensureEmptyState();
+
+            // Confirmar eliminación
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamar al servidor para eliminar
+                    fetch('/Proyectos/EliminarProyecto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(parseInt(projectId))
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(resultado => {
+                            if (resultado.ok) {
+                                if (editingCard === card) {
+                                    clearForm();
+                                }
+                                card.remove();
+                                ensureEmptyState();
+
+                                Swal.fire({
+                                    title: '¡Eliminado!',
+                                    text: resultado.mensaje || 'El proyecto ha sido eliminado.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#297ea6'
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: resultado.mensaje || 'No se pudo eliminar el proyecto.',
+                                    icon: 'error',
+                                    confirmButtonColor: '#297ea6'
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Ocurrió un error al eliminar el proyecto: ' + error.message,
+                                icon: 'error',
+                                confirmButtonColor: '#297ea6'
+                            });
+                        });
+                }
+            });
         });
-
-        actions.appendChild(editButton);
-        actions.appendChild(statusButton);
-        actions.appendChild(deleteButton);
-
-        card.appendChild(header);
-        card.appendChild(course);
-        card.appendChild(description);
-        card.appendChild(actions);
-
-        applyStatus(card, normalizedEstado);
-
-        return card;
     }
 
-    function updateCard(card, data) {
-        card.dataset.nombre = data.nombre;
-        card.dataset.curso = data.curso;
-        card.dataset.descripcion = data.descripcion;
-        card.dataset.fecha = data.fecha;
-
-        card.querySelector('.project-title').textContent = data.nombre;
-        card.querySelector('.project-date').textContent = formatDate(data.fecha);
-        const courseText = card.querySelector('.course-text');
-        if (courseText) {
-            courseText.textContent = data.curso;
-        }
-        card.querySelector('.project-description').textContent = data.descripcion;
-
-        applyStatus(card, card.dataset.estado || 'pendiente');
+    // ========== INICIALIZAR TARJETAS EXISTENTES ==========
+    function initializeExistingCards() {
+        const existingCards = list.querySelectorAll('.project-card');
+        existingCards.forEach(card => {
+            attachCardEvents(card);
+            applyStatus(card, card.dataset.estado || 'pendiente');
+        });
     }
 
+    // ========== SUBMIT FORM ==========
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+
+        // Obtener el nombre del estudiante del dropdown
+        let estudianteNombre = "";
+        if (inputs.estudiante && inputs.estudiante.value) {
+            const estudianteSelect = inputs.estudiante;
+            const selectedEstudianteOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+            estudianteNombre = selectedEstudianteOption ? selectedEstudianteOption.text : "";
+        }
+
+        // Obtener los IDs de estudiantes seleccionados
+        const estudiantesSeleccionados = $('#estudianteSelect').val();
+        // Asegurar que siempre sea un array
+        const idAsignadoArray = Array.isArray(estudiantesSeleccionados) 
+            ? estudiantesSeleccionados 
+            : (estudiantesSeleccionados ? [estudiantesSeleccionados] : []);
 
         const data = {
             nombre: inputs.nombre.value.trim(),
             curso: inputs.curso.value.trim(),
             descripcion: inputs.descripcion.value.trim(),
             fecha: inputs.fecha.value,
-            estado: editingCard ? editingCard.dataset.estado : 'pendiente'
+            estado: editingCard ? editingCard.dataset.estado : 'pendiente',
+            id_asignado: idAsignadoArray,
+            nombreAsignado: estudianteNombre
         };
 
         if (!data.nombre || !data.curso || !data.descripcion || !data.fecha) {
@@ -240,15 +337,10 @@
         }
 
         if (editingCard) {
+            // Actualizar tarjeta existente
             updateCard(editingCard, data);
         } else {
-            const emptyEl = document.getElementById('emptyState');
-            if (emptyEl) {
-                emptyEl.remove();
-            }
-
-            console.log(data)
-
+            // Crear nueva tarjeta
             fetch('../Proyectos/InsertarProyecto', {
                 method: 'POST',
                 headers: {
@@ -256,12 +348,39 @@
                 },
                 body: JSON.stringify(data)
             })
-
                 .then(response => response.json())
-
                 .then(resultado => {
-
                     if (resultado.ok) {
+                        // Agregar el ID del proyecto devuelto por el servidor
+                        let proyectoId = null;
+                        if (resultado.valorRetorno && resultado.valorRetorno.id_proyecto) {
+                            proyectoId = resultado.valorRetorno.id_proyecto;
+                            data.id_proyecto = proyectoId;
+                        }
+
+                        // Si se seleccionó un estudiante, asignarlo al proyecto
+                        const estudianteId = inputs.estudiante ? inputs.estudiante.value.trim() : null;
+                        if (estudianteId && estudianteId !== '' && proyectoId) {
+                            fetch('/Proyectos/AsignarEstudiante', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    proyectoId: parseInt(proyectoId),
+                                    estudianteId: parseInt(estudianteId)
+                                })
+                            })
+                                .then(response => response.json())
+                                .then(asignacionResult => {
+                                    if (!asignacionResult.ok) {
+                                        console.warn('No se pudo asignar el estudiante:', asignacionResult.mensaje);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error al asignar estudiante:', error);
+                                });
+                        }
 
                         Swal.fire({
                             title: "Éxito!",
@@ -271,35 +390,28 @@
                             confirmButtonColor: '#297ea6'
                         });
 
-
-
-
+                        // Crear la tarjeta con el nombre del estudiante
+                        const card = createCardFromTemplate(data);
+                        list.appendChild(card);
+                        ensureEmptyState();
                     } else {
-
                         Swal.fire({
                             title: "Advertencia",
                             text: `${resultado.mensaje}`,
                             icon: "warning",
                             confirmButtonText: 'Entendido',
                             confirmButtonColor: '#297ea6'
-
                         });
-
                     }
-
-
-
-
-
-                })
-
-            const card = createCardElements(data);
-            list.appendChild(card);
+                });
         }
 
         clearForm();
-        ensureEmptyState();
     });
 
+    // ========== INICIALIZACIÓN ==========
+    initializeExistingCards();
     ensureEmptyState();
+
+
 });

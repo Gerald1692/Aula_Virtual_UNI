@@ -1,61 +1,103 @@
-﻿@{
+@{
     Layout = null;
+
+    var ListaTareas = ViewBag.ListaTareas;
+    var rol = ViewBag.Rol as string;
 
 }
 
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <script src="~/js/tareas.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aula Virtual - Proyectos</title>
+    <title>Aula Virtual - Tareas</title>
     <!-- Tus estilos -->
-    <link href="~/css/proyectos/proyectos.css" rel="stylesheet" />
-    <link href="~/css/m_principal/MenuPrincipal.css" rel="stylesheet" />
-    <link href="~/css/tarreas/tareas.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">  
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="~/css/Tarea/Tarea.css" rel="stylesheet" />
+
     <!-- Font Awesome -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <script src="~/js/Tarea.js"></script>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
 </head>
 
-
-
 <body>
+    <!-- NAV SUPERIOR -->
     <nav class="topnav" role="navigation" aria-label="Principal">
         <ul class="nav-actions">
+
             <li>
                 <a class="nav-link" href="/Menu/V_Menu">
-                    <i class="fa-solid fa-bars"></i> Menú Principal
+                    <i class="fa-solid fa-bars"></i> Menu Principal
                 </a>
             </li>
+            </a>
+            </li>
+            <!-- <li><a class="nav-link" href="#Tareas"><i class="fa-solid fa-layer-group"></i> Crear Tareas</a></li>-->
+
         </ul>
         <div class="brand">
             <span>Aula Virtual</span>
         </div>
     </nav>
 
-
-
-    <main class="main tasks-page">
-
+    <!-- Contenido principal -->
+    <main class="main">
         <header class="header">
             <h1>Crear Tareas</h1>
-            <form class="project-form" action="#" method="post">
+            <form class="task-form" action="#" method="post">
                 <label class="form-field">
-                    <span>Nombre de la Tarea</span>
-                    <input type="text" name="nombre" required />
+                    <span>Título de la tarea</span>
+                    <input type="text" name="titulo" required />
                 </label>
                 <label class="form-field">
-                    <span>Curso</span>
-                    <input type="text" name="curso" required />
+                    <span>Proyecto</span>
+                    <select name="proyecto" id="proyectoSelect" required>
+                        <option value="">Seleccione un proyecto</option>
+                        @if (ViewBag.ListaProyectos != null)
+                        {
+                            @foreach (var proyecto in ViewBag.ListaProyectos)
+                            {
+                                <option value="@proyecto.id_proyecto" data-nombre="@proyecto.nombre">@proyecto.nombre</option>
+                            }
+                        }
+                    </select>
                 </label>
                 <label class="form-field">
-                    <span>Fecha de entrega</span>
-                    <input type="date" name="fecha" required />
+                    <span>Estudiante Asignado</span>
+                    <select class="js-example-basic-multiple" name="estudiante" id="estudianteSelect" multiple="multiple" required>
+                        <option value="">Seleccione un proyecto primero</option>
+                        @if (ViewBag.ListaEstudiantes != null && ((List<Entities.Usuario>)ViewBag.ListaEstudiantes).Count > 0)
+                        {
+                            @foreach (var estudiante in ViewBag.ListaEstudiantes)
+                            {
+                                <option value="@estudiante.Id">@estudiante.NombreCompleto</option>
+                            }
+                        }
+                    </select>
                 </label>
                 <label class="form-field">
-                    <span>Descripción de la Tarea</span>
+                    <span>Fecha límite</span>
+                    <input type="date" name="fechaLimite" required />
+                </label>
+                <label class="form-field">
+                    <span>Descripción de la tarea</span>
                     <textarea name="descripcion" rows="3" required></textarea>
                 </label>
                 <div class="form-field form-action">
@@ -66,29 +108,132 @@
                 </div>
             </form>
         </header>
+        <div class="section-title">
+            <i class="fa-regular fa-square-plus"></i> Profesor
+        </div>
 
-
-
-        <section class="projects" aria-live="polite">
-            <h2 class="project-list-title">
-                <i class="fa-solid fa-list-check"></i> Tareas creados
+        <section class="tasks" aria-live="polite">
+            <h2 class="task-list-title">
+                <i class="fa-solid fa-list-check"></i> Tareas creadas
             </h2>
-            <div class="project-list" id="projectList">
-                <p class="empty-state" id="emptyState">Aún no hay Tareas creados.</p>
+            <div class="task-list" id="taskList">
+         
+
+                @if (ListaTareas != null)
+                {
+                    @foreach (var Tarea in ListaTareas)
+                    {
+
+                        <article class="task-card"
+                                 data-id="@Tarea.Id"
+                                 data-titulo="@Tarea.Titulo"
+                                 data-proyectoid="@Tarea.ProyectoId"
+                                 data-proyecto="@Tarea.Curso"
+                                 data-estudianteid="@Tarea.EstudianteAsignadoId"
+                                 data-nombreasignado="@Tarea.NombreAsignado"
+                                 data-descripcion="@Tarea.Descripcion"
+                                 data-fechalimite="@Tarea.FechaLimite.ToString("yyyy-MM-dd")"
+                                 data-estado="@Tarea.Estado">
+                            <div class="task-card-header">
+                                <h3 class="task-title">@Tarea.Titulo</h3>
+                                <div class="task-meta">
+                                    <span class="task-status is-pending">@Tarea.Estado</span>
+                                    <span class="task-date">@Tarea.FechaLimite.ToString("dd MMM yyyy")</span>
+                                </div>
+                            </div>
+
+                            <p class="task-course">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                                <span class="course-text">@Tarea.Curso</span>
+                            </p>
+                            
+                            @if (!string.IsNullOrEmpty(Tarea.NombreAsignado))
+                            {
+                                <p class="task-assigned">
+                                    <i class="fa-solid fa-user"></i>
+                                    <span class="assigned-text">@Tarea.NombreAsignado</span>
+                                    <hr>
+                                </p>
+                                
+                            }
+
+                            <p class="task-description">@Tarea.Descripcion</p>
+
+                                        <!-- El CRUD DE LA TAREA  -->
+                            <div class="task-card-actions">
+                                
+                                <button type="button" class="btn-action btn-edit">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </button>
+
+                                <button type="button" class="btn-action btn-status">
+                                    <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                                </button>
+
+                                <button type="button" class="btn-action btn-delete">
+                                    <i class="fa-solid fa-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </article>
+                    }
+                }
+
+
+
+                <p class="empty-state" id="emptyState">Aún no hay tareas creadas.</p>
             </div>
         </section>
-
     </main>
-    
 
+    <!-- Template para tarjetas de tareas -->
+    <template id="task-card-template">
+        <article class="task-card" 
+                 data-id=""
+                 data-titulo="" 
+                 data-proyectoid="" 
+                 data-proyecto="" 
+                 data-estudianteid=""
+                 data-nombreasignado=""
+                 data-descripcion="" 
+                 data-fechalimite="" 
+                 data-estado="pendiente">
+            <div class="task-card-header">
+                <h3 class="task-title"></h3>
+                <div class="task-meta">
+                    <span class="task-status is-pending"></span>
+                    <span class="task-date"></span>
+                </div>
+            </div>
+
+            <p class="task-course">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span class="course-text"></span>
+            </p>
+            
+            <p class="task-assigned">
+                <i class="fa-solid fa-user"></i>
+                <span class="assigned-text"></span>
+            </p>
+
+            <p class="task-description"></p>
+
+            <div class="task-card-actions">
+                
+
+                <button type="button" class="btn-action btn-edit">
+                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                </button>
+
+                <button type="button" class="btn-action btn-status">
+                    <i class="fa-solid fa-flag"></i> Estado: Pendiente
+                </button>
+
+                <button type="button" class="btn-action btn-delete">
+                    <i class="fa-solid fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </article>
+    </template>
 
 </body>
-
 </html>
-
-
-
-
-
-
-

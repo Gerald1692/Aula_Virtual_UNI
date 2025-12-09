@@ -31,12 +31,24 @@ namespace AulaVirtualDAL
 
                                 if (exito == 1)
                                 {
+                                    // Lectura robusta de columnas para soportar SP nuevo y viejo
+                                    string nombreCompleto;
+                                    try { nombreCompleto = reader["NombreCompleto"].ToString(); }
+                                    catch { nombreCompleto = reader["NombreUsuario"].ToString(); }
+
+                                    int rolId;
+                                    try { rolId = Convert.ToInt32(reader["RolId"]); }
+                                    catch { rolId = Convert.ToInt32(reader["id_rol"]); }
+
+                                    int usuarioId;
+                                    try { usuarioId = Convert.ToInt32(reader["UsuarioId"]); }
+                                    catch { usuarioId = Convert.ToInt32(reader["id_usuario"]); }
+
                                     Usuario usuario = new Usuario
                                     {
-                                        NombreUsuario = reader["NombreCompleto"].ToString(),
-                                        Rol = reader["id_rol"].ToString(),
-                                        IdUsuario = Convert.ToInt32(reader["id_usuario"])
-
+                                        NombreCompleto = nombreCompleto,
+                                        RolId = rolId,
+                                        Id = usuarioId
                                     };
 
                                     respuesta.Ok = true;
@@ -53,6 +65,53 @@ namespace AulaVirtualDAL
                             {
                                 respuesta.Ok = false;
                                 respuesta.Mensaje = "Usuario o contraseña incorrectos.";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
+
+        public Respuesta<string> RecuperarContrasena(string Usuario, string Conexion)
+        {
+            Respuesta<string> respuesta = new Respuesta<string>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    // Consulta directa para buscar la contraseña por correo o nombre de usuario
+                    string query = @"
+                        SELECT contrasena 
+                        FROM usuarios 
+                        WHERE correo = @Usuario OR nombre = @Usuario";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@Usuario", SqlDbType.NVarChar, 100) { Value = Usuario });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                string contrasena = reader["contrasena"].ToString();
+                                respuesta.Ok = true;
+                                respuesta.Mensaje = "Contraseña recuperada exitosamente.";
+                                respuesta.ValorRetorno = contrasena;
+                            }
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "No se encontró un usuario con ese correo o nombre de usuario.";
                             }
                         }
                     }

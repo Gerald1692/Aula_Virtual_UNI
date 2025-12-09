@@ -176,11 +176,10 @@ body {
 }
 
 .project-form {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: start;
     margin: 0;
 }
 
@@ -188,7 +187,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 170px;
     color: var(--muted);
     font-size: 13px;
     font-weight: 600;
@@ -198,13 +196,25 @@ body {
         text-align: center;
     }
 
+/* Campo de descripción ocupa desde la columna 1 hasta antes de la 4, llegando hasta el botón */
+.project-form .form-field:nth-last-child(2) {
+    grid-column: 1 / 4;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Botón de crear se mantiene en su columna, alineado al final y más a la derecha */
 .form-action {
-    align-self: center;
+    grid-column: 4;
+    align-self: flex-end;
+    justify-self: start;
     min-width: auto;
     width: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    margin-left: 0;
+    padding-left: 10px;
 }
 
     .form-action > span {
@@ -385,6 +395,8 @@ body {
     gap: 10px;
     flex-wrap: wrap;
 }
+
+
 
 .btn-action {
     border-radius: 6px;
@@ -609,10 +621,16 @@ body {
     }
 
     .project-form {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
         gap: 12px;
+    }
+
+    .project-form .form-field:nth-last-child(2) {
+        grid-column: span 1;
+    }
+
+    .form-action {
+        grid-column: span 1;
     }
 
     .form-field {
