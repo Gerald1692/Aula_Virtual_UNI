@@ -227,6 +227,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(response => response.json())
                 .then(resultado => {
                     if (resultado.ok) {
+                        // Obtener el nombre del creador desde la respuesta si está disponible
+                        if (resultado.valorRetorno && resultado.valorRetorno.nombreCreador) {
+                            uiData.nombreCreador = resultado.valorRetorno.nombreCreador;
+                        } else if (resultado.valorRetorno && resultado.valorRetorno.NombreCreador) {
+                            uiData.nombreCreador = resultado.valorRetorno.NombreCreador;
+                        }
+                        // Si no viene en la respuesta, mantener el valor existente de la tarjeta
+                        if (!uiData.nombreCreador && editingCard) {
+                            uiData.nombreCreador = editingCard.dataset.nombrecreador || '';
+                        }
                         updateCard(editingCard, uiData);
                         clearForm();
                         Swal.fire({
@@ -268,6 +278,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Actualizar el ID en los datos de la UI con el ID devuelto por el servidor
                         if (resultado.valorRetorno && resultado.valorRetorno.id) {
                             uiData.id = resultado.valorRetorno.id;
+                        }
+                        // Obtener el nombre del creador desde la respuesta del servidor
+                        if (resultado.valorRetorno && resultado.valorRetorno.nombreCreador) {
+                            uiData.nombreCreador = resultado.valorRetorno.nombreCreador;
+                        } else if (resultado.valorRetorno && resultado.valorRetorno.NombreCreador) {
+                            uiData.nombreCreador = resultado.valorRetorno.NombreCreador;
                         }
 
                         createCardFromTemplate(uiData);
@@ -338,10 +354,21 @@ document.addEventListener('DOMContentLoaded', function () {
         card.querySelector('.course-text').textContent = data.proyectoNombre;
         card.querySelector('.task-description').textContent = data.descripcion;
 
+        // Mostrar creador si existe
+        const createdText = card.querySelector('.created-text');
+        if (createdText) {
+            createdText.textContent = data.nombreCreador || '';
+            // Mostrar/ocultar contenedor si es necesario
+            const createdContainer = card.querySelector('.task-created');
+            if (createdContainer) {
+                createdContainer.style.display = data.nombreCreador ? 'block' : 'none';
+            }
+        }
+
         // Mostrar estudiante asignado si existe
         const assignedText = card.querySelector('.assigned-text');
         if (assignedText) {
-            assignedText.textContent = data.nombreAsignado;
+            assignedText.textContent = data.nombreAsignado || '';
             // Mostrar/ocultar contenedor si es necesario
             const assignedContainer = card.querySelector('.task-assigned');
             if (assignedContainer) {
@@ -358,7 +385,8 @@ document.addEventListener('DOMContentLoaded', function () {
         card.dataset.proyectoid = data.proyectoId;
         card.dataset.proyecto = data.proyectoNombre;
         card.dataset.estudianteid = data.estudianteAsignadoId;
-        card.dataset.nombreasignado = data.nombreAsignado;
+        card.dataset.nombreasignado = data.nombreAsignado || '';
+        card.dataset.nombrecreador = data.nombreCreador || '';
         card.dataset.descripcion = data.descripcion;
         card.dataset.fechalimite = data.fechaLimite;
         card.dataset.estado = data.estado;
@@ -513,6 +541,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tareaId = card.dataset.id || '';
         inputs.descripcion.value = card.dataset.descripcion || '';
         inputs.fechaLimite.value = card.dataset.fechalimite || '';
+        // El nombre del creador no se edita, solo se muestra
 
         // Establecer el proyecto primero
         inputs.proyecto.value = proyectoId;

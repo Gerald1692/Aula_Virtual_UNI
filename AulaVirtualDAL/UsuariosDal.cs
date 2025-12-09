@@ -126,5 +126,67 @@ namespace AulaVirtualDAL
 
             return respuesta;
         }
+
+        public Respuesta<Usuario> ObtenerUsuarioPorId(int UsuarioId, string Conexion)
+        {
+            Respuesta<Usuario> respuesta = new Respuesta<Usuario>();
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(Conexion))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT 
+                            u.id_usuario AS Id,
+                            u.nombre AS Nombre,
+                            u.apellido1 AS Apellido1,
+                            u.apellido2 AS Apellido2,
+                            CONCAT(u.nombre, ' ', u.apellido1, ' ', ISNULL(u.apellido2, '')) AS NombreCompleto,
+                            u.cedula AS Cedula,
+                            u.correo AS Email
+                        FROM dbo.usuarios u
+                        WHERE u.id_usuario = @UsuarioId";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.Add(new SqlParameter("@UsuarioId", SqlDbType.Int) { Value = UsuarioId });
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                Usuario usuario = new Usuario
+                                {
+                                    Id = (int)reader["Id"],
+                                    Nombre = reader["Nombre"] != DBNull.Value ? (string)reader["Nombre"] : string.Empty,
+                                    Apellido1 = reader["Apellido1"] != DBNull.Value ? (string)reader["Apellido1"] : string.Empty,
+                                    Apellido2 = reader["Apellido2"] != DBNull.Value ? (string)reader["Apellido2"] : null,
+                                    NombreCompleto = reader["NombreCompleto"] != DBNull.Value ? (string)reader["NombreCompleto"] : string.Empty,
+                                    Cedula = reader["Cedula"] != DBNull.Value ? (string)reader["Cedula"] : string.Empty,
+                                    Email = reader["Email"] != DBNull.Value ? (string)reader["Email"] : string.Empty
+                                };
+
+                                respuesta.Ok = true;
+                                respuesta.Mensaje = "Usuario obtenido de manera exitosa";
+                                respuesta.ValorRetorno = usuario;
+                            }
+                            else
+                            {
+                                respuesta.Ok = false;
+                                respuesta.Mensaje = "Usuario no encontrado";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                respuesta.Ok = false;
+                respuesta.Mensaje = ex.Message;
+            }
+
+            return respuesta;
+        }
     }
 }

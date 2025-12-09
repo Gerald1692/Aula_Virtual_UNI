@@ -362,10 +362,29 @@ namespace AulaVirtualDAL
                 {
                     connection.Open();
 
-                    using (SqlCommand command = new SqlCommand("ObtenerTareas", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
+                    // Usar consulta directa para incluir el nombre del creador
+                    string query = @"
+                        SELECT 
+                            t.id_tarea AS Id,
+                            t.titulo AS Titulo,
+                            t.descripcion AS Descripcion,
+                            t.id_proyecto AS ProyectoId,
+                            t.id_asignado AS EstudianteAsignadoId,
+                            t.id_creador AS IdCreador,
+                            t.fecha_inicio AS FechaInicio,
+                            t.fecha_limite AS FechaLimite,
+                            t.estado AS Estado,
+                            p.curso AS Curso,
+                            CONCAT(u_asignado.nombre, ' ', u_asignado.apellido1, ' ', ISNULL(u_asignado.apellido2, '')) AS NombreAsignado,
+                            CONCAT(u_creador.nombre, ' ', u_creador.apellido1, ' ', ISNULL(u_creador.apellido2, '')) AS NombreCreador
+                        FROM dbo.tareas t
+                        INNER JOIN dbo.proyectos p ON t.id_proyecto = p.id_proyecto
+                        LEFT JOIN dbo.usuarios u_asignado ON t.id_asignado = u_asignado.id_usuario
+                        LEFT JOIN dbo.usuarios u_creador ON t.id_creador = u_creador.id_usuario
+                        ORDER BY t.fecha_limite DESC";
 
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -377,10 +396,12 @@ namespace AulaVirtualDAL
                                     Descripcion = (string)reader["Descripcion"],
                                     ProyectoId = (int)reader["ProyectoId"],
                                     EstudianteAsignadoId = reader["EstudianteAsignadoId"] != DBNull.Value ? (int)reader["EstudianteAsignadoId"] : null,
+                                    IdCreador = reader["IdCreador"] != DBNull.Value ? (int)reader["IdCreador"] : null,
                                     FechaInicio = reader["FechaInicio"] != DBNull.Value ? (DateTime?)reader["FechaInicio"] : null,
                                     FechaLimite = (DateTime)reader["FechaLimite"],
                                     Estado = (string)reader["Estado"],
                                     NombreAsignado = reader["NombreAsignado"] != DBNull.Value ? (string)reader["NombreAsignado"] : null,
+                                    NombreCreador = reader["NombreCreador"] != DBNull.Value ? (string)reader["NombreCreador"] : null,
                                     Curso = (string)reader["Curso"],
                                     EstudiantesAsignados = new List<Usuario>()
                                 };
@@ -388,31 +409,31 @@ namespace AulaVirtualDAL
                                 ListaTareas.Add(Tarea);
                             }
                         }
+                    }
 
-                        // Obtener todos los estudiantes asignados para cada tarea
-                        foreach (var tarea in ListaTareas)
+                    // Obtener todos los estudiantes asignados para cada tarea
+                    foreach (var tarea in ListaTareas)
+                    {
+                        var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
+                        if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
                         {
-                            var estudiantesRespuesta = ObtenerEstudiantesPorTarea(tarea.Id, Conexion);
-                            if (estudiantesRespuesta.Ok && estudiantesRespuesta.ValorRetorno != null)
+                            tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
+                            
+                            // Actualizar NombreAsignado con todos los estudiantes si hay múltiples
+                            if (tarea.EstudiantesAsignados.Count > 1)
                             {
-                                tarea.EstudiantesAsignados = estudiantesRespuesta.ValorRetorno;
-                                
-                                // Actualizar NombreAsignado con todos los estudiantes si hay múltiples
-                                if (tarea.EstudiantesAsignados.Count > 1)
-                                {
-                                    tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
-                                }
-                                else if (tarea.EstudiantesAsignados.Count == 1)
-                                {
-                                    tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
-                                }
+                                tarea.NombreAsignado = string.Join(", ", tarea.EstudiantesAsignados.Select(e => e.NombreCompleto));
+                            }
+                            else if (tarea.EstudiantesAsignados.Count == 1)
+                            {
+                                tarea.NombreAsignado = tarea.EstudiantesAsignados[0].NombreCompleto;
                             }
                         }
-
-                        respuesta.Ok = true;
-                        respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
-                        respuesta.ValorRetorno = ListaTareas;
                     }
+
+                    respuesta.Ok = true;
+                    respuesta.Mensaje = $"Datos obtenidos de manera exitosa";
+                    respuesta.ValorRetorno = ListaTareas;
                 }
             }
             catch (Exception ex)
