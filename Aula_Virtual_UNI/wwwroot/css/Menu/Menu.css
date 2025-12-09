@@ -375,25 +375,25 @@ body {
 
     .task-status.is-pending {
         background: #1e7b3b;
-        border-color: #27ae60;
+        border-color: transparent;
         color: #ecfdf3;
     }
 
     .task-status.is-progress {
         background: #7e5b00;
-        border-color: #f1c40f;
+        border-color: transparent;
         color: #fff7d6;
     }
 
     .task-status.is-done {
         background: #145a86;
-        border-color: #3498db;
+        border-color: transparent;
         color: #e8f4ff;
     }
 
 /* Botón de estado según estado */
 .project-card[data-estado="pendiente"] .btn-status {
-    border-color: rgba(39, 174, 96, 0.75);
+    border-color: transparent;
     background: rgba(39, 174, 96, 0.12);
     color: #b9f6ca;
 }
@@ -403,7 +403,7 @@ body {
     }
 
 .project-card[data-estado="en_progreso"] .btn-status {
-    border-color: rgba(241, 196, 15, 0.85);
+    border-color: transparent;
     background: rgba(241, 196, 15, 0.12);
     color: #ffeaa7;
 }
@@ -414,7 +414,7 @@ body {
 
 .project-card[data-estado="terminada"] .btn-status,
 .project-card[data-estado="terminada"] .btn-status.is-reset {
-    border-color: rgba(189, 195, 199, 0.8);
+    border-color: transparent;
     background: transparent;
     color: #d0d3d4;
 }
@@ -478,9 +478,17 @@ body {
 .projects-section .project-card h3,
 .tasks-section .task-card h3 {
     margin-top: 0 !important;
-    color: var(--cyan) !important;
+    color: var(--text) !important;
     font-size: 18px !important;
     font-weight: 700 !important;
+}
+
+/* Sobrescribir el color inline de los nombres */
+.projects-section .project-card h3[style*="color: #297ea6"],
+.tasks-section .task-card h3[style*="color: #297ea6"],
+.projects-section .project-card h3[style*="color: white"],
+.tasks-section .task-card h3[style*="color: white"] {
+    color: white !important;
 }
 
 .projects-section .project-card p,
@@ -509,7 +517,7 @@ body {
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.85em;
-    border: 1px solid #27ae60;
+    border: 1px solid transparent;
     font-weight: 600;
 }
 
@@ -582,13 +590,16 @@ body {
     padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.8em;
-    border: 1px solid rgba(2, 190, 225, 0.3);
+    border: 1px solid transparent;
 }
 
 .tasks-section .task-card span[style*="background: #fff3cd"] {
-    background: rgba(241, 196, 15, 0.15) !important;
-    color: #ffeaa7 !important;
-    border-color: rgba(241, 196, 15, 0.3);
+    background: rgba(2, 190, 225, 0.15) !important;
+    color: var(--cyan) !important;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    border: 1px solid transparent;
 }
 
 /* Botón de cambiar estado */
@@ -631,8 +642,10 @@ body {
 }
 
 .projects-section .project-card h3[style*="color: #297ea6"],
-.tasks-section .task-card h3[style*="color: #297ea6"] {
-    color: var(--cyan) !important;
+.tasks-section .task-card h3[style*="color: #297ea6"],
+.projects-section .project-card h3[style*="color: white"],
+.tasks-section .task-card h3[style*="color: white"] {
+    color: white !important;
 }
 
 .projects-section .project-card p[style*="color: #666"],
@@ -649,7 +662,7 @@ body {
 .tasks-section .task-card span[style*="background: #297ea6"] {
     background: #1e7b3b !important;
     color: #ecfdf3 !important;
-    border: 1px solid #27ae60 !important;
+    border: 1px solid transparent !important;
 }
 
 .projects-section .project-card div[style*="border-top: 1px solid #eee"],

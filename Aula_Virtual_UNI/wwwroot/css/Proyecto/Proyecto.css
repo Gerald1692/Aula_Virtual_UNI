@@ -520,19 +520,19 @@ select.form-control option {
 
     .task-status.is-pending {
         background: #1e7b3b;
-        border-color: #27ae60;
+        border-color: transparent;
         color: #ecfdf3;
     }
 
     .task-status.is-progress {
         background: #7e5b00;
-        border-color: #f1c40f;
+        border-color: transparent;
         color: #fff7d6;
     }
 
     .task-status.is-done {
         background: #145a86;
-        border-color: #3498db;
+        border-color: transparent;
         color: #e8f4ff;
     }
 
