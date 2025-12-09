@@ -139,11 +139,10 @@ body {
 
 /* Project form */
 .project-form {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    align-items: start;
     margin: 0;
 }
 
@@ -151,7 +150,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-width: 170px;
     color: var(--muted);
     font-size: 13px;
     font-weight: 600;
@@ -161,13 +159,25 @@ body {
         text-align: center;
     }
 
+/* Campo de descripción ocupa 2 columnas y está más a la derecha, llegando hasta el botón */
+.project-form .form-field:nth-last-child(2) {
+    grid-column: 1 / 4;
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Botón de crear se mantiene en su columna, alineado al final y más a la derecha */
 .form-action {
-    align-self: center;
+    grid-column: 4;
+    align-self: flex-end;
+    justify-self: start;
     min-width: auto;
     width: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    margin-left: 0;
+    padding-left: 10px;
 }
 
     .form-action > span {
@@ -198,6 +208,139 @@ body {
     .project-form textarea::placeholder {
         color: var(--muted);
     }
+
+/* Estilos generales para todos los selects */
+.project-form select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #2d2f36;
+    color: #e8e8e8;
+    cursor: pointer;
+}
+
+    .project-form select option {
+        background-color: #2d2f36;
+        color: #e8e8e8;
+    }
+
+/* Estilos para Select2 - Dropdown de Estudiante Asignado */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+    background-color: #2d2f36 !important;
+    border: 1px solid #3a3d44 !important;
+    border-radius: 8px !important;
+    min-height: 40px !important;
+    color: #e8e8e8 !important;
+    padding: 2px 8px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #23252b !important;
+    border: 1px solid #3a3d44 !important;
+    color: #e8e8e8 !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    margin: 2px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #b9bec9 !important;
+    margin-right: 5px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #e8e8e8 !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    color: #e8e8e8 !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+    color: #b9bec9 !important;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    background-color: transparent !important;
+    color: #e8e8e8 !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field::placeholder {
+    color: #b9bec9 !important;
+}
+
+/* Dropdown abierto de Select2 */
+.select2-container--default .select2-dropdown {
+    background-color: #2d2f36 !important;
+    border: 1px solid #3a3d44 !important;
+    border-radius: 8px !important;
+}
+
+.select2-container--default .select2-results__option {
+    background-color: #2d2f36 !important;
+    color: #e8e8e8 !important;
+    padding: 8px 12px !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #23252b !important;
+    color: #02BEE1 !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: rgba(2, 190, 225, 0.2) !important;
+    color: #02BEE1 !important;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected]:hover {
+    background-color: rgba(2, 190, 225, 0.15) !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: #23252b !important;
+    border: 1px solid #3a3d44 !important;
+    color: #e8e8e8 !important;
+    border-radius: 4px !important;
+    padding: 6px 10px !important;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: #02BEE1 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(2,190,225,.15) !important;
+}
+
+/* Focus del contenedor Select2 */
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #02BEE1 !important;
+    box-shadow: 0 0 0 2px rgba(2,190,225,.15) !important;
+}
+
+/* Estilos para el contenedor específico del estudiante */
+.project-form .select2-container--default {
+    width: 100% !important;
+}
+
+/* Sobrescribir estilos de Bootstrap si están interfiriendo */
+select.form-control,
+select.form-control {
+    background-color: #2d2f36 !important;
+    color: #e8e8e8 !important;
+    border: 1px solid #3a3d44 !important;
+}
+
+select.form-control option {
+    background-color: #2d2f36 !important;
+    color: #e8e8e8 !important;
+}
 
 .btn-create {
     height: 40px;
@@ -452,10 +595,16 @@ body {
     }
 
     .project-form {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
         gap: 12px;
+    }
+
+    .project-form .form-field:nth-last-child(2) {
+        grid-column: span 1;
+    }
+
+    .form-action {
+        grid-column: span 1;
     }
 
         .form-field,

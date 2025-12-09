@@ -424,6 +424,251 @@ body {
         background: rgba(189, 195, 199, 0.15);
     }
 
+/* Secciones de Proyectos Asignados y Tareas Asignadas */
+.projects-section,
+.tasks-section {
+    margin: 20px 0;
+}
+
+.projects-section h2,
+.tasks-section h2 {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+    .projects-section h2 i,
+    .tasks-section h2 i {
+        color: var(--cyan);
+    }
+
+.projects-list,
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Tarjetas de proyectos y tareas en el menú */
+.projects-section .project-card,
+.tasks-section .task-card {
+    border: 1px solid #3a3d44 !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    background: var(--panel-2) !important;
+    color: var(--text) !important;
+}
+
+.projects-section .project-card > div,
+.tasks-section .task-card > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+}
+
+.projects-section .project-card > div > div,
+.tasks-section .task-card > div > div {
+    flex: 1;
+}
+
+.projects-section .project-card h3,
+.tasks-section .task-card h3 {
+    margin-top: 0 !important;
+    color: var(--cyan) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+}
+
+.projects-section .project-card p,
+.tasks-section .task-card p {
+    color: #cfd3dc !important;
+    font-size: 0.9em !important;
+    line-height: 1.5 !important;
+    margin: 8px 0 !important;
+}
+
+/* Meta información (estado, fecha, curso) */
+.projects-section .project-card > div > div > div,
+.tasks-section .task-card > div > div > div {
+    margin-top: 10px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Badges de estado */
+.projects-section .project-card span[style*="background: #297ea6"],
+.tasks-section .task-card .task-status {
+    background: #1e7b3b !important;
+    color: #ecfdf3 !important;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    border: 1px solid #27ae60;
+    font-weight: 600;
+}
+
+/* Información de fecha y curso */
+.projects-section .project-card span[style*="font-size: 0.85em"],
+.tasks-section .task-card span[style*="font-size: 0.85em"] {
+    font-size: 0.85em !important;
+    color: var(--muted) !important;
+}
+
+.projects-section .project-card span i,
+.tasks-section .task-card span i {
+    margin-right: 5px;
+    color: var(--cyan);
+}
+
+/* Sección de profesor/creador */
+.projects-section .project-card > div > div > div[style*="border-top"],
+.tasks-section .task-card > div > div > div[style*="border-top"] {
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #3a3d44 !important;
+}
+
+.projects-section .project-card > div > div > div[style*="border-top"] p,
+.tasks-section .task-card > div > div > div[style*="border-top"] p {
+    font-size: 0.85em !important;
+    color: var(--muted) !important;
+    margin: 5px 0 !important;
+}
+
+.projects-section .project-card > div > div > div[style*="border-top"] strong,
+.tasks-section .task-card > div > div > div[style*="border-top"] strong {
+    color: var(--text) !important;
+}
+
+.projects-section .project-card > div > div > div[style*="border-top"] p i,
+.tasks-section .task-card > div > div > div[style*="border-top"] p i {
+    color: var(--cyan) !important;
+}
+
+/* Sección de integrantes/estudiantes asignados */
+.projects-section .project-card > div > div > div[style*="margin-top: 8px"],
+.tasks-section .task-card > div > div > div[style*="margin-top: 8px"] {
+    margin-top: 8px;
+}
+
+.projects-section .project-card > div > div > div[style*="margin-top: 8px"] p,
+.tasks-section .task-card > div > div > div[style*="margin-top: 8px"] p {
+    font-size: 0.85em !important;
+    color: var(--muted) !important;
+    margin: 5px 0 !important;
+}
+
+.projects-section .project-card > div > div > div[style*="margin-top: 8px"] strong,
+.tasks-section .task-card > div > div > div[style*="margin-top: 8px"] strong {
+    color: var(--text) !important;
+}
+
+.projects-section .project-card > div > div > div[style*="margin-top: 8px"] p i,
+.tasks-section .task-card > div > div > div[style*="margin-top: 8px"] p i {
+    color: var(--cyan) !important;
+}
+
+/* Tags de integrantes/estudiantes */
+.projects-section .project-card span[style*="background: #e8f4f8"],
+.tasks-section .task-card span[style*="background: #fff3cd"] {
+    background: rgba(2, 190, 225, 0.15) !important;
+    color: var(--cyan) !important;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    border: 1px solid rgba(2, 190, 225, 0.3);
+}
+
+.tasks-section .task-card span[style*="background: #fff3cd"] {
+    background: rgba(241, 196, 15, 0.15) !important;
+    color: #ffeaa7 !important;
+    border-color: rgba(241, 196, 15, 0.3);
+}
+
+/* Botón de cambiar estado */
+.tasks-section .task-card .btn-status {
+    padding: 4px 12px !important;
+    border-radius: 6px !important;
+    border: 1px solid #3a3d44 !important;
+    background: transparent !important;
+    color: #e6e6e6 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.tasks-section .task-card .btn-status:hover {
+    background: rgba(2, 190, 225, 0.1) !important;
+}
+
+/* Mensaje de estado vacío */
+.projects-section p[style*="color: #888"],
+.tasks-section p[style*="color: #888"] {
+    color: var(--muted) !important;
+    font-style: italic;
+}
+
+/* Sobrescribir todos los estilos inline de las tarjetas */
+.projects-section .project-card[style*="background: #fff"],
+.tasks-section .task-card[style*="background: #fff"] {
+    background: var(--panel-2) !important;
+    border: 1px solid #3a3d44 !important;
+}
+
+.projects-section .project-card[style*="border: 1px solid #ddd"],
+.tasks-section .task-card[style*="border: 1px solid #ddd"] {
+    border: 1px solid #3a3d44 !important;
+}
+
+.projects-section .project-card h3[style*="color: #297ea6"],
+.tasks-section .task-card h3[style*="color: #297ea6"] {
+    color: var(--cyan) !important;
+}
+
+.projects-section .project-card p[style*="color: #666"],
+.tasks-section .task-card p[style*="color: #666"] {
+    color: #cfd3dc !important;
+}
+
+.projects-section .project-card p[style*="color: #555"],
+.tasks-section .task-card p[style*="color: #555"] {
+    color: var(--muted) !important;
+}
+
+.projects-section .project-card span[style*="background: #297ea6"],
+.tasks-section .task-card span[style*="background: #297ea6"] {
+    background: #1e7b3b !important;
+    color: #ecfdf3 !important;
+    border: 1px solid #27ae60 !important;
+}
+
+.projects-section .project-card div[style*="border-top: 1px solid #eee"],
+.tasks-section .task-card div[style*="border-top: 1px solid #eee"] {
+    border-top: 1px solid #3a3d44 !important;
+}
+
+/* Section title */
+.section-title {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Media queries (responsivo) */
 @media (max-width: 900px) {
     .cards-grid {
