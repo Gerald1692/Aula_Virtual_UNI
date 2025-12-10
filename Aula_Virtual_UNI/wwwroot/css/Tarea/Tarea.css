@@ -486,6 +486,60 @@ select#proyectoSelect.form-control option {
         color: #f1f5ff;
     }
 
+.task-created,
+.task-assigned {
+    margin: 8px 0;
+    color: #d4d8e2;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.task-created i {
+    color: #02BEE1;
+    font-size: 16px;
+}
+
+.task-assigned i {
+    color: #02BEE1;
+    font-size: 16px;
+}
+
+.task-created .created-label,
+.task-assigned .assigned-label {
+    color: #e8e8e8;
+    font-weight: 600;
+}
+
+.task-created .created-text {
+    background: #7e5b00;
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.task-assigned .assigned-text {
+    background: #264653;
+    color: #02BEE1;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.task-card hr {
+    margin: 12px 0;
+    border: none;
+    border-top: 1px solid #a5aab3;
+    width: 100%;
+}
+
 .task-description {
     margin: 0;
     color: #cfd3dc;

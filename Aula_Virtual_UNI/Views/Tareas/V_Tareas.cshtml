@@ -131,6 +131,7 @@
                                  data-proyecto="@Tarea.Curso"
                                  data-estudianteid="@Tarea.EstudianteAsignadoId"
                                  data-nombreasignado="@Tarea.NombreAsignado"
+                                 data-nombrecreador="@Tarea.NombreCreador"
                                  data-descripcion="@Tarea.Descripcion"
                                  data-fechalimite="@Tarea.FechaLimite.ToString("yyyy-MM-dd")"
                                  data-estado="@Tarea.Estado">
@@ -147,14 +148,23 @@
                                 <span class="course-text">@Tarea.Curso</span>
                             </p>
                             
+                            @if (!string.IsNullOrEmpty(Tarea.NombreCreador))
+                            {
+                                <p class="task-created">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                    <span class="created-label">Creado por:</span>
+                                    <span class="created-text">@Tarea.NombreCreador</span>
+                                </p>
+                            }
+                            
                             @if (!string.IsNullOrEmpty(Tarea.NombreAsignado))
                             {
                                 <p class="task-assigned">
-                                    <i class="fa-solid fa-user"></i>
+                                    <i class="fa-solid fa-user-check"></i>
+                                    <span class="assigned-label">Asignado a:</span>
                                     <span class="assigned-text">@Tarea.NombreAsignado</span>
-                                    <hr>
                                 </p>
-                                
+                                <hr>
                             }
 
                             <p class="task-description">@Tarea.Descripcion</p>
@@ -187,13 +197,14 @@
 
     <!-- Template para tarjetas de tareas -->
     <template id="task-card-template">
-        <article class="task-card" 
+                        <article class="task-card" 
                  data-id=""
                  data-titulo="" 
                  data-proyectoid="" 
                  data-proyecto="" 
                  data-estudianteid=""
                  data-nombreasignado=""
+                 data-nombrecreador=""
                  data-descripcion="" 
                  data-fechalimite="" 
                  data-estado="pendiente">
@@ -210,10 +221,18 @@
                 <span class="course-text"></span>
             </p>
             
+            <p class="task-created">
+                <i class="fa-solid fa-user-plus"></i>
+                <span class="created-label">Creado por:</span>
+                <span class="created-text"></span>
+            </p>
+            
             <p class="task-assigned">
-                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-user-check"></i>
+                <span class="assigned-label">Asignado a:</span>
                 <span class="assigned-text"></span>
             </p>
+            <hr>
 
             <p class="task-description"></p>
 

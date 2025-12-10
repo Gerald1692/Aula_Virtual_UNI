@@ -176,6 +176,16 @@ namespace Aula_Virtual_UNI.Controllers
                 {
                     reply = respuesta;
 
+                    // Obtener el nombre del creador si existe IdCreador
+                    if (respuesta.ValorRetorno.IdCreador.HasValue)
+                    {
+                        var usuarioRespuesta = UsuariosDAL.ObtenerUsuarioPorId(respuesta.ValorRetorno.IdCreador.Value, conexion);
+                        if (usuarioRespuesta != null && usuarioRespuesta.Ok && usuarioRespuesta.ValorRetorno != null)
+                        {
+                            respuesta.ValorRetorno.NombreCreador = usuarioRespuesta.ValorRetorno.NombreCompleto;
+                        }
+                    }
+
                     // Asignar estudiantes a la tarea
                     List<int> estudiantesParaAsignar = new List<int>();
                     
